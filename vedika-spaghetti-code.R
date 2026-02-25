@@ -39,14 +39,16 @@ glimpse(turtle_tidy)
 head(turtle_tidy) 
 
 # Write to csv
-write_csv(turtle_tidy, "data/fishnet_illumination_long_vedika.csv")
+turtle_tidy <- turtle_tidy %>%
+  pivot_wider(names_from = metric, values_from = value)
+write_csv(turtle_tidy, "data/fishnet_illumination_wide_vedika.csv")
   
 ########_______EXPERIMENT WITH GLMM________________
 # library(nlme)
 # library(glmmTMB)
 library(mgcv)
-
-
+gamm()
+?pivot_wider
 
 ## Robustness checks!! 
 # Overdispersion? 
