@@ -42,8 +42,11 @@ head(turtle_tidy)
 write_csv(turtle_tidy, "data/fishnet_illumination_long_vedika.csv")
   
 ########_______EXPERIMENT WITH GLMM________________
-library(nlme)
-library(glmmTMB)
+# library(nlme)
+# library(glmmTMB)
+library(mgcv)
+
+
 
 ## Robustness checks!! 
 # Overdispersion? 
