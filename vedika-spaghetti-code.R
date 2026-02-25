@@ -24,7 +24,7 @@ metric_labs <- cols[control_cols]
 
 # Create tidy data frame by looping through control and treatment groups 
 turtle_tidy <- map2_dfr(control_cols, illum_cols, function(control, ill){ 
-  metric <- cols[control] # metric name from named control olumn
+  metric <- cols[control] # metric name from named control column
   tibble(
     gillnet_pair <- rep(turtle_data[[1]],2), # return treatment groups twice... extract as data frame!!
     treatment <- rep(c("Control", "Illuminated"), each = nrow(turtle_data)), # assignment label for each row
@@ -55,17 +55,19 @@ library(mgcv)
 library(glmmTMB)
 # Update column names
 ## authors mention using bpue turtle as response, treatment group is fixed effect, pair id random effect
-## distribution is tweedie, family is logit
+## distribution is tweedie, family is log
 
 ## Really good resource for fitting random effects!! https://fromthebottomoftheheap.net/2021/02/02/random-effects-in-gams/
 #ERROR: names(dat) <- object$term : 
 # 'names' attribute [1] must be the same length as the vector [0]
-turtle_glmm <- gam(turtle_biomass_bpue ~ treatment + s(gill_net_pair, bs = "re"), method = "REML", 
-                   family = tweedie(link = "log"),
+turtle_glmm <- gam(turtle_biomass_bpue ~ treatment + s(gill_net_pair, bs = "re"), 
+                   method = "REML", 
+                   #family = tweedie(link = "log"),
+                   family = tw(),
                    data = turtle_tidy)
 
 ## Robustness checks!! 
 # Overdispersion? 
 # ICC? 
 
-
+?tw()
