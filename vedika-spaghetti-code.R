@@ -38,17 +38,26 @@ turtle_tidy <- map2_dfr(control_cols, illum_cols, function(control, ill){
 glimpse(turtle_tidy)
 head(turtle_tidy) 
 
-# Write to csv
+
+
+# Separate to wide format (need separate columns for each metric)
 turtle_tidy <- turtle_tidy %>%
   pivot_wider(names_from = metric, values_from = value)
+
+# Update column names for glmm
+turtle_tidy <- turtle_tidy %>% rename(turtle_biomass_bpue = "Loggerhead turtle biomass BPUE",  treatment = `treatment <- ...`, gill_net_pair = `gillnet_pair <- rep(turtle_data[[1]], 2)` )
+
+# Write to csv
 write_csv(turtle_tidy, "data/fishnet_illumination_wide_vedika.csv")
   
 ########_______EXPERIMENT WITH GLMM________________
-# library(nlme)
-# library(glmmTMB)
 library(mgcv)
-gamm()
-?pivot_wider
+# Update column names
+## authors mention using bpue turtle as response, treatment group is fixed effect, pair id random effect
+## distribution is tweedie, family is logit?
+# rename colmnns
+turtle_glmm <- gamm()
+
 
 ## Robustness checks!! 
 # Overdispersion? 
