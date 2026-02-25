@@ -52,12 +52,17 @@ write_csv(turtle_tidy, "data/fishnet_illumination_wide_vedika.csv")
   
 ########_______EXPERIMENT WITH GLMM________________
 library(mgcv)
+library(glmmTMB)
 # Update column names
 ## authors mention using bpue turtle as response, treatment group is fixed effect, pair id random effect
 ## distribution is tweedie, family is logit
-# rename colmnns
-turtle_glmm <- gam(turtle_biomass_bpue ~ treatment, (1|gill_net_pair), method = "re", family = tweedie(link = "log"), data = turtle_tidy)
 
+## Really good resource for fitting random effects!! https://fromthebottomoftheheap.net/2021/02/02/random-effects-in-gams/
+#ERROR: names(dat) <- object$term : 
+# 'names' attribute [1] must be the same length as the vector [0]
+turtle_glmm <- gam(turtle_biomass_bpue ~ treatment + s(gill_net_pair, bs = "re"), method = "REML", 
+                   family = tweedie(link = "log"),
+                   data = turtle_tidy)
 
 ## Robustness checks!! 
 # Overdispersion? 
