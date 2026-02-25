@@ -58,16 +58,18 @@ library(glmmTMB)
 ## distribution is tweedie, family is log
 
 ## Really good resource for fitting random effects!! https://fromthebottomoftheheap.net/2021/02/02/random-effects-in-gams/
-#ERROR: names(dat) <- object$term : 
-# 'names' attribute [1] must be the same length as the vector [0]
+turtle_tidy <- turtle_tidy %>% mutate(treatment = factor(treatment),
+                                      gill_net_pair = factor(gill_net_pair), 
+                                      turtle_biomass_bpue = as.numeric(turtle_biomass_bpue))
+
 turtle_glmm <- gam(turtle_biomass_bpue ~ treatment + s(gill_net_pair, bs = "re"), 
                    method = "REML", 
-                   #family = tweedie(link = "log"),
-                   family = tw(),
+                  family = tw(),
+                  # family = tweedie(link = "log"),
                    data = turtle_tidy)
 
+summary(turtle_glmm)
 ## Robustness checks!! 
 # Overdispersion? 
 # ICC? 
 
-?tw()
