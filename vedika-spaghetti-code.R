@@ -54,9 +54,9 @@ write_csv(turtle_tidy, "data/fishnet_illumination_wide_vedika.csv")
 library(mgcv)
 # Update column names
 ## authors mention using bpue turtle as response, treatment group is fixed effect, pair id random effect
-## distribution is tweedie, family is logit?
+## distribution is tweedie, family is logit
 # rename colmnns
-turtle_glmm <- gamm()
+turtle_glmm <- gam(turtle_biomass_bpue ~ treatment, (1|gill_net_pair), method = "re", family = tweedie(link = "log"), data = turtle_tidy)
 
 
 ## Robustness checks!! 
