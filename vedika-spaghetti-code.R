@@ -15,26 +15,26 @@ turtle
 cols <- names(turtle)
 turtle_data <- turtle[-1,] # remove header
 
-# Pull treatment columns 
+# Pull treatment columns (control are even, illum are odd)
 control_cols <- seq(2, 28, by = 2) 
 illum_cols <- seq(3, 29, by = 2) 
 
-# Assign metric labs 
+# Assign metric labs (control values)
 metric_labs <- cols[control_cols]
 
 # Create tidy data frame by looping through control and treatment groups 
 turtle_tidy <- map2_dfr(control_cols, illum_cols, function(control, ill){ 
   metric <- cols[control] # metric name from named control olumn
   tibble(
-    gillnet_pair <- rep(turtle_data[[1]],2), # return treatment groups twice 
-    treatment <- rep(c("Control", "Illuminated"), each = nrow(turtle_data)), 
-    metric = metric, 
+    gillnet_pair <- rep(turtle_data[[1]],2), # return treatment groups twice... extract as data frame!!
+    treatment <- rep(c("Control", "Illuminated"), each = nrow(turtle_data)), # assignment label for each row
+    metric = metric, # treatment group label
     value = c(turtle_data[[control]], turtle_data[[ill]])
   ) 
 }
 )
   
-# Take a look at double pivoted data frame
+# Take a look at data frame
 glimpse(turtle_tidy)
 head(turtle_tidy) 
 
@@ -45,6 +45,8 @@ write_csv(turtle_tidy, "data/fishnet_illumination_long_vedika.csv")
 library(nlme)
 library(glmmTMB)
 
-
+## Robustness checks!! 
+# Overdispersion? 
+# ICC? 
 
 
