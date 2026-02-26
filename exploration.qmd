@@ -71,6 +71,7 @@ ggplot(bpue, aes(x= gillnet_pair, y = bpue, color = animal_type)) +
   theme_minimal()
 ```
 ## Fit the `gam()` for the bpue
+`Tweedie()` explanation. https://stat.ethz.ch/R-manual/R-devel/library/mgcv/html/Tweedie.html
 ```{r}
 bpue_glm <- gam(bpue ~ treatment + s(gillnet_pair, bs = 're'),
                 family = Tweedie(1.25,power(.1)),
@@ -108,7 +109,7 @@ cpue_glm <- gam(cpue ~ treatment + s(gillnet_pair, bs = 're'),
                 family = Tweedie(1.25,power(.1)),
                 data = cpue)
 
-stats::predict(cpue_glm)
+# stats::predict(cpue_glm)
 ```
 # Residual plots? 
 # Confidence Intervals with bootstrapping 10,000 simulations
