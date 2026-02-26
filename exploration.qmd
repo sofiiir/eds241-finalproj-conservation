@@ -121,7 +121,7 @@ gam(bpue ~ treatment + s(gillnet_pair, bs = 're'),
 #                   family = tw(),
 #                   # family = tweedie(link = "log"),
 #                    data = turtle_tidy)
->>>>>>> vedika-branch
+
 ```
 # Residual plots? 
 # Confidence Intervals with bootstrapping 10,000 simulations
