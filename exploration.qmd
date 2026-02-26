@@ -70,6 +70,13 @@ ggplot(bpue_glm, aes(x= gillnet_pair, y = bpue, color = catch)) +
 ```{r}
 gam(bpue ~ treatment + s(gillnet_pair, bs = 're'),
     data = bpue_glm)
+
+### Include tweedie distribution? 
+# turtle_glmm <- gam(bpue ~ treatment + s(gill_net_pair, bs = "re"), 
+#                    method = "REML", 
+#                   family = tw(),
+#                   # family = tweedie(link = "log"),
+#                    data = turtle_tidy)
 ```
 # Residual plots? 
 # Confidence Intervals with bootstrapping 10,000 simulations

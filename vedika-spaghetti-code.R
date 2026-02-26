@@ -9,7 +9,6 @@ library(readxl)
 ## Read in data
 turtle <- read_excel(here::here("data", "fishnet_illumination_raw.xlsx"))
 
-
 ## Need columns for: gillnet pair, biomass BPUE, biomass BPUE number, biomass CPUE, biomass CPUE number, species, treatment (control, illuminated), associated treatment value, Total secondary target fish biomass CPUE		Market value of total target fish value MVPUE		Haulback time per 100 m net	
 turtle
 cols <- names(turtle)
@@ -68,8 +67,11 @@ turtle_glmm <- gam(turtle_biomass_bpue ~ treatment + s(gill_net_pair, bs = "re")
                   # family = tweedie(link = "log"),
                    data = turtle_tidy)
 
+
 summary(turtle_glmm)
+
 ## Robustness checks!! 
 # Overdispersion? 
 # ICC? 
+
 
