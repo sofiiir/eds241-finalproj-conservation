@@ -1,17 +1,75 @@
 ---
 title: "exploration"
 format: html
+warning: false
+message: false
 ---
 
 Load libraries
 ```{r}
 library(tidyverse)
+library(mgcv)
+library(stats)
 library(here)
 ```
 
 Load data
 ```{r}
-bpue <- read_csv(here("data", "fishnet_illumination_bpue.csv"))
-biomass <- read_csv(here("data", "fishnet_illumination_biomass.csv"))
+catch_data <- read_csv(here("data", "fishnet_illumination_bpue.csv"))
+# biomass <- read_csv(here("data", "fishnet_illumination_biomass.csv"))
+```
+# General Linear Mixed Model (GLMM) with a Tweedie distribution
+
+The paper runs a separate GLMM for Bycatch Per Unit Effort (BPUE) and Catch Per Unit Effort (CPUE). The BPUE analysis was only completed for sea turtles, not for all by-catch but we'll run both at least for exploration.
+
+Let's make two separate data frames one for each.
+
+BPUE is created by just selecting the appropriate rows. 
+```{r}
+bpue <- catch_data |> 
+  filter(animal_type == "total_bpue" | animal_type == "non_finfish_bpue" | animal_type == "finfish_bpue" | animal_type == "elasmobranch_bpue" | animal_type == "humboldt_squid_bpue" | animal_type == "loggerhead_biomass_bpue" | animal_type == "loggerhead_number_bpue")
 ```
 
+CPUE names are wrong. Filter for the appropriate rows, then pivot to make changing the names easier before pivotting back. 
+```{r}
+cpue <- catch_data |> 
+  filter(animal_type == "total_fish_bpue" | animal_type == "total_primary_fish_bpue" | animal_type == "halibut_bpue" | animal_type == "grouper_bpue" | animal_type == "total_secondary_fish_bpue") |> 
+  pivot_wider(names_from = animal_type,
+              values_from = bpue) |> 
+  rename("total_fish_cpue" = "total_fish_bpue", 
+         "total_primary_fish_cpue" = "total_primary_fish_bpue",
+         "halibut_cpue" = "halibut_bpue",
+         "grouper_cpue" = "grouper_bpue",
+         "total_secondary_fish_cpue" = "total_secondary_fish_bpue") |> 
+  pivot_longer(cols = c(total_fish_cpue, 
+                        total_primary_fish_cpue, 
+                        halibut_cpue, 
+                        grouper_cpue, 
+                        total_secondary_fish_cpue)) |> 
+  rename("treatment"= "exp_unit",
+         "catch" = "name",
+         "cpue" = "value")
+```
+
+# `GLMM` on the BPUE data 
+### Convert appropriate variables to be a factor
+```{r}
+bpue_glm <- bpue |> 
+  mutate(catch = as.factor(animal_type), 
+         treatment = as.factor(exp_unit), 
+         gillnet_pair = as.factor(gillnet_pair))
+```
+### Initial exploration plot
+```{r}
+ggplot(bpue_glm, aes(x= gillnet_pair, y = bpue, color = catch)) + 
+  geom_point() +
+  facet_wrap(~treatment) + 
+  theme_minimal()
+```
+## Fit the `gam()` for the bpue
+```{r}
+gam(bpue ~ treatment + s(gillnet_pair, bs = 're'),
+    data = bpue_glm)
+```
+# Residual plots? 
+# Confidence Intervals with bootstrapping 10,000 simulations
