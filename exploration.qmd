@@ -6,6 +6,7 @@ message: false
 ---
 
 Load libraries
+
 ```{r}
 library(tidyverse)
 library(mgcv)
@@ -14,18 +15,22 @@ library(here)
 ```
 
 Load data
+
 ```{r}
 catch_data <- read_csv(here("data", "fishnet_illumination_bpue.csv"))
 # biomass <- read_csv(here("data", "fishnet_illumination_biomass.csv"))
 ```
+
 # General Linear Mixed Model (GLMM) with a Tweedie distribution
+
 ## BPUE and CPUE data frame cleaning
 
 The paper runs a separate GLMM for Bycatch Per Unit Effort (BPUE) and Catch Per Unit Effort (CPUE). The BPUE analysis was only completed for sea turtles, not for all by-catch but we'll run both at least for exploration.
 
 Let's make two separate data frames one for each.
 
-BPUE is created by just selecting the appropriate rows. 
+BPUE is created by just selecting the appropriate rows.
+
 ```{r}
 bpue <- catch_data |> 
   filter(animal_type == "total_bpue" | animal_type == "non_finfish_bpue" | animal_type == "finfish_bpue" | animal_type == "elasmobranch_bpue" | animal_type == "humboldt_squid_bpue" | animal_type == "loggerhead_biomass_bpue" | animal_type == "loggerhead_number_bpue")
@@ -34,7 +39,8 @@ turtle_bpue <- catch_data |>
   filter(animal_type == "loggerhead_biomass_bpue" | animal_type == "loggerhead_number_bpue")
 ```
 
-CPUE names are wrong. Filter for the appropriate rows, then pivot to make changing the names easier before pivotting back. 
+CPUE names are wrong. Filter for the appropriate rows, then pivot to make changing the names easier before pivotting back.
+
 ```{r}
 cpue <- catch_data |> 
   filter(animal_type == "total_fish_bpue" | animal_type == "total_primary_fish_bpue" | animal_type == "halibut_bpue" | animal_type == "grouper_bpue" | animal_type == "total_secondary_fish_bpue") |> 
@@ -55,32 +61,40 @@ cpue <- catch_data |>
          "cpue" = "value")
 ```
 
-# `GLMM` on the BPUE data 
+# `GLMM` on the BPUE data
+
 ### Convert appropriate variables to be a factor
+
 ```{r}
 bpue <- bpue |> 
   mutate(animal_type = as.factor(animal_type), 
          treatment = as.factor(exp_unit), 
          gillnet_pair = as.factor(gillnet_pair))
 ```
+
 ### Initial exploration plot
+
 ```{r}
 ggplot(bpue, aes(x= gillnet_pair, y = bpue, color = animal_type)) + 
   geom_point() +
   facet_wrap(~treatment) + 
   theme_minimal()
 ```
+
 ## Fit the `gam()` for the bpue
+
 `Tweedie()` explanation. https://stat.ethz.ch/R-manual/R-devel/library/mgcv/html/Tweedie.html
+
 ```{r}
-<<<<<<< HEAD
 bpue_glm <- gam(bpue ~ treatment + s(gillnet_pair, bs = 're'),
                 family = Tweedie(1.25,power(.1)),
                 data = bpue)
 ```
 
-# `GLMM` on the turtle BPUE data 
+# `GLMM` on the turtle BPUE data
+
 ### Convert appropriate variables to be a factor
+
 ```{r}
 turtle_bpue <- turtle_bpue |> 
   mutate(animal_type = as.factor(animal_type), 
@@ -89,14 +103,17 @@ turtle_bpue <- turtle_bpue |>
 ```
 
 ## Fit the `gam()` for the turtle bpue
+
 ```{r}
 turtle_bpue_glm <- gam(bpue ~ treatment + s(gillnet_pair, bs = 're'),
                        family = Tweedie(1.25,power(.1)),
                        data = turtle_bpue)
 ```
 
-# `GLMM` on the CPUE data 
+# `GLMM` on the CPUE data
+
 ### Convert appropriate variables to be a factor
+
 ```{r}
 cpue <- cpue |> 
   mutate(catch = as.factor(catch), 
@@ -105,23 +122,19 @@ cpue <- cpue |>
 ```
 
 ## Fit the `gam()` for the cpue
+
 ```{r}
 cpue_glm <- gam(cpue ~ treatment + s(gillnet_pair, bs = 're'),
                 family = Tweedie(1.25,power(.1)),
                 data = cpue)
 
 # stats::predict(cpue_glm)
-=======
+
 gam(bpue ~ treatment + s(gillnet_pair, bs = 're'),
     data = bpue_glm)
 
-### Include tweedie distribution? 
-# turtle_glmm <- gam(bpue ~ treatment + s(gill_net_pair, bs = "re"), 
-#                    method = "REML", 
-#                   family = tw(),
-#                   # family = tweedie(link = "log"),
-#                    data = turtle_tidy)
-
 ```
-# Residual plots? 
+
+# Residual plots?
+
 # Confidence Intervals with bootstrapping 10,000 simulations
