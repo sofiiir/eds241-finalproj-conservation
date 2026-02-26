@@ -73,6 +73,7 @@ ggplot(bpue, aes(x= gillnet_pair, y = bpue, color = animal_type)) +
 ## Fit the `gam()` for the bpue
 `Tweedie()` explanation. https://stat.ethz.ch/R-manual/R-devel/library/mgcv/html/Tweedie.html
 ```{r}
+<<<<<<< HEAD
 bpue_glm <- gam(bpue ~ treatment + s(gillnet_pair, bs = 're'),
                 family = Tweedie(1.25,power(.1)),
                 data = bpue)
@@ -110,6 +111,17 @@ cpue_glm <- gam(cpue ~ treatment + s(gillnet_pair, bs = 're'),
                 data = cpue)
 
 # stats::predict(cpue_glm)
+=======
+gam(bpue ~ treatment + s(gillnet_pair, bs = 're'),
+    data = bpue_glm)
+
+### Include tweedie distribution? 
+# turtle_glmm <- gam(bpue ~ treatment + s(gill_net_pair, bs = "re"), 
+#                    method = "REML", 
+#                   family = tw(),
+#                   # family = tweedie(link = "log"),
+#                    data = turtle_tidy)
+>>>>>>> vedika-branch
 ```
 # Residual plots? 
 # Confidence Intervals with bootstrapping 10,000 simulations
