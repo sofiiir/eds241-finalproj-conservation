@@ -64,7 +64,7 @@ turtle_tidy <- turtle_tidy %>% mutate(treatment = factor(treatment),
 turtle_glmm <- gam(turtle_biomass_bpue ~ treatment + s(gill_net_pair, bs = "re"), 
                    method = "REML", 
                   family = tw(),
-                  # family = tweedie(link = "log"),
+                   #family = tweedie(link = "log"),
                    data = turtle_tidy)
 
 
