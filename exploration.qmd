@@ -3,3 +3,15 @@ title: "exploration"
 format: html
 ---
 
+Load libraries
+```{r}
+library(tidyverse)
+library(here)
+```
+
+Load data
+```{r}
+bpue <- read_csv(here("data", "fishnet_illumination_bpue.csv"))
+biomass <- read_csv(here("data", "fishnet_illumination_biomass.csv"))
+```
+
