@@ -1,9 +1,14 @@
 ---
 title: "exploration"
 format: html
+author: Leela Dixit, Sofia Rodas, & Vedika Shirtekar
 warning: false
 message: false
 ---
+
+# Replicating Senko, J. 2025 
+
+This repository replicates the study Senko, J. 2025.
 
 Load libraries
 
@@ -18,7 +23,6 @@ Load data
 
 ```{r}
 catch_data <- read_csv(here("data", "fishnet_illumination_bpue.csv"))
-# biomass <- read_csv(here("data", "fishnet_illumination_biomass.csv"))
 ```
 
 # General Linear Mixed Model (GLMM) with a Tweedie distribution
@@ -81,9 +85,12 @@ ggplot(bpue, aes(x= gillnet_pair, y = bpue, color = animal_type)) +
   theme_minimal()
 
 ggplot() +
-  geom_bar(data = bpue, aes(x = bpue)) +
+  geom_histogram(data = bpue, 
+                 aes(x = bpue), 
+                 width = 0.2) +
   facet_wrap(~treatment) + 
-  theme_minimal()
+  theme_minimal() +
+  labs(title = "Distribution BPUE")
 
 ```
 
@@ -102,6 +109,7 @@ summary(bpue_glm)
 # `GLMM` on the turtle BPUE data
 
 ### Convert appropriate variables to be a factor
+
 
 ```{r}
 turtle_bpue <- turtle_bpue |> 
@@ -122,9 +130,11 @@ ggplot(aes(x= gillnet_pair, y = bpue, color = animal_type)) +
 turtle_bpue |> 
   filter(animal_type == "loggerhead_number_bpue") |> 
 ggplot() +
-  geom_bar(aes(x = bpue)) +
+  geom_bar(aes(x = bpue), 
+           width = 0.1) +
   facet_wrap(~treatment) + 
-  theme_minimal()
+  theme_minimal() +
+  labs(title = "Distribution of Loggerhead BPUE Counts")
 
 ```
 
@@ -146,6 +156,22 @@ cpue <- cpue |>
          treatment = as.factor(treatment), 
          gillnet_pair = as.factor(gillnet_pair))
 ```
+
+```{r}
+ggplot(cpue, aes(x= gillnet_pair, y = cpue, color = catch)) + 
+  geom_point() +
+  facet_wrap(~treatment) + 
+  theme_minimal()
+
+ggplot() +
+  geom_histogram(data = cpue, 
+                 aes(x = cpue), 
+                 width = 0.2) +
+  facet_wrap(~treatment) + 
+  theme_minimal() +
+  labs(title = "Distribution CPUE")
+```
+
 
 ## Fit the `gam()` for the cpue
 
