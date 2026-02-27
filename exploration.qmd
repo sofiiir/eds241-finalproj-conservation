@@ -150,9 +150,19 @@ cpue <- cpue |>
 ## Fit the `gam()` for the cpue
 
 ```{r}
+<<<<<<< HEAD
 cpue_glm <- gam(cpue ~ treatment + s(gillnet_pair, bs = 're'),
                 family = tw(link = log),
                 data = cpue)
+=======
+ cpue_glm <- gam(cpue ~ treatment + s(gillnet_pair, bs = 're'),
+                 family = Tweedie(1.25,power(.1)),
+                 data = cpue)
+
+
+
+summary(cpue_glm)
+>>>>>>> ae7d1cd (Tried to edit model.)
 
 <<<<<<< HEAD
 #stats::predict(cpue_glm)
