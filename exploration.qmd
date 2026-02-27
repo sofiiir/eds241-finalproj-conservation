@@ -153,16 +153,6 @@ cpue <- cpue |>
 cpue_glm <- gam(cpue ~ treatment + s(gillnet_pair, bs = 're'),
                 family = tw(link = log),
                 data = cpue)
-
-<<<<<<< HEAD
-#stats::predict(cpue_glm)
-=======
-# stats::predict(cpue_glm)
-
-gam(bpue ~ treatment + s(gillnet_pair, bs = 're'),
-    data = bpue_glm)
-
->>>>>>> 66e01d57bcd2e65a590b3017e0225dff316119d6
 ```
 
 # Residual plots?
