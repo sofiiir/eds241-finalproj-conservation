@@ -179,6 +179,13 @@ ggplot() +
 cpue_glm <- gam(cpue ~ treatment + s(gillnet_pair, bs = 're'),
                 family = tw(link = log),
                 data = cpue)
+
+
+summary(cpue_glm)
+
+#stats::predict(cpue_glm)
+
+
 ```
 
 # Residual plots?
