@@ -8,7 +8,7 @@ message: false
 
 # Replicating Senko, J. 2025 
 
-This repository replicates the study Senko, J. 2025.
+This quarto document replicates the study Senko, J. 2025 studying how illuminating fish nets influences target fish catch and by-catch. This study explores the sustainable solution of using solar energy light sticks to illuminate nets with the goal of avoiding sea turtle by-catch. The original study analyzes the Bycatch Per Unit Effort (BPUE) of sea-turtles and the Catch Per Unit Effort (CPUE) for target fish species. We added an analysis of BPUE for all species to more thoroughly analyze the data. 
 
 Load libraries
 
