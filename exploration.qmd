@@ -121,8 +121,8 @@ ggplot(aes(x= gillnet_pair, y = bpue, color = animal_type)) +
 
 turtle_bpue |> 
   filter(animal_type == "loggerhead_number_bpue") |> 
-ggplot() +
-  geom_bar(aes(x = bpue)) +
+ggplot(aes(x = bpue)) +
+  geom_bar(width = 0.2) +
   facet_wrap(~treatment) + 
   theme_minimal()
 
@@ -153,16 +153,63 @@ cpue <- cpue |>
 cpue_glm <- gam(cpue ~ treatment + s(gillnet_pair, bs = 're'),
                 family = tw(link = log),
                 data = cpue)
+```
+## Calculate predictions for mean and standard errors
+```{r}
+# generate predictions for bpue data
+prediction_turtle <- stats::predict(bpue_glm, data = bpue, se.fit = TRUE, type = "response")
+# join predictions to original data
+bpue_prediction <- cbind(bpue, as.data.frame(prediction_turtle))
 
-<<<<<<< HEAD
-#stats::predict(cpue_glm)
-=======
-# stats::predict(cpue_glm)
+# generate predictions for cpue data
+prediction_fish <- stats::predict(cpue_glm, data = cpue, se.fit = TRUE, type = "response")
+# join predictions to original data
+cpue_prediction <- cbind(cpue, as.data.frame(prediction_fish))
 
-gam(bpue ~ treatment + s(gillnet_pair, bs = 're'),
-    data = bpue_glm)
+bpue_prediction %>%
+  filter(animal_type == "loggerhead_number_bpue") %>% 
+  group_by(treatment) %>% 
+  summarise(mean_fit = mean(fit),
+            mean_se = mean(se.fit),
+            .groups = "drop") %>% 
+  ggplot(aes(x = treatment, y = mean_fit, fill = treatment)) +
+  geom_col() +
+  geom_errorbar(aes(ymin = mean_fit - mean_se, ymax = mean_fit + mean_se, width = 0.2)) +
+  scale_fill_manual(values = c("control" = "#000000",
+                               "illuminated" = "#39f72e")) +
+  theme_minimal() +
+  theme(panel.background = element_rect(fill = "#2d2f33"),
+        plot.background = element_rect(fill = "#2d2f33"),
+        panel.grid = element_blank(),
+        axis.text = element_text(color = "white"),
+        axis.title.y = element_text(color = "white"),
+        legend.position = "none",
+        title = element_text(color = "white")) +
+  labs(x = "",
+       y = "Predicted mean sea turtle BPUE\n(no. turtles per 100m net x 12h",
+       title = "Predicted Sea Turtle Bycatch Decreases with Illuminated Nets")
 
->>>>>>> 66e01d57bcd2e65a590b3017e0225dff316119d6
+cpue_prediction %>%
+  group_by(treatment) %>% 
+  summarise(mean_fit = mean(fit),
+            mean_se = mean(se.fit),
+            .groups = "drop") %>% 
+  ggplot(aes(x = treatment, y = mean_fit, fill = treatment)) +
+  geom_col() +
+  geom_errorbar(aes(ymin = mean_fit - mean_se, ymax = mean_fit + mean_se, width = 0.2), color = "white") +
+  scale_fill_manual(values = c("control" = "#000000",
+                               "illuminated" = "#39f72e")) +
+  theme_minimal() +
+  theme(panel.background = element_rect(fill = "#2d2f33"),
+        plot.background = element_rect(fill = "#2d2f33"),
+        panel.grid = element_blank(),
+        axis.text = element_text(color = "white"),
+        axis.title.y = element_text(color = "white"),
+        legend.position = "none",
+        title = element_text(color = "white")) +
+  labs(x = "",
+       y = "Predicted mean target fish CPUE\n(kg fish per 100m net x 12h",
+       title = "Predicted target fish CPUE increases with illuminated nets")
 ```
 
 # Residual plots?
