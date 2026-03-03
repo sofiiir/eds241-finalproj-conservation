@@ -6,9 +6,9 @@ warning: false
 message: false
 ---
 
-# Replicating Senko, J. 2025 
+# Replicating Senko, J. 2025
 
-This quarto document replicates the study Senko, J. 2025 studying how illuminating fish nets influences target fish catch and by-catch. This study explores the sustainable solution of using solar energy light sticks to illuminate nets with the goal of avoiding sea turtle by-catch. The original study analyzes the Bycatch Per Unit Effort (BPUE) of sea-turtles and the Catch Per Unit Effort (CPUE) for target fish species. We added an analysis of BPUE for all species to more thoroughly analyze the data. 
+This quarto document replicates the study Senko, J. 2025 studying how illuminating fish nets influences target fish catch and by-catch. This study explores the sustainable solution of using solar energy light sticks to illuminate nets with the goal of avoiding sea turtle by-catch. The original study analyzes the Bycatch Per Unit Effort (BPUE) of sea-turtles and the Catch Per Unit Effort (CPUE) for target fish species. We added an analysis of BPUE for all species to more thoroughly analyze the data.
 
 Load libraries
 
@@ -17,6 +17,7 @@ library(tidyverse)
 library(mgcv)
 library(stats)
 library(here)
+library(DHARMa)
 ```
 
 Load data
@@ -110,7 +111,6 @@ summary(bpue_glm)
 
 ### Convert appropriate variables to be a factor
 
-
 ```{r}
 turtle_bpue <- turtle_bpue |> 
   mutate(animal_type = as.factor(animal_type), 
@@ -119,6 +119,7 @@ turtle_bpue <- turtle_bpue |>
 ```
 
 ### Initial exploration plot
+
 ```{r}
 turtle_bpue |> 
   filter(animal_type == "loggerhead_number_bpue") |> 
@@ -171,7 +172,6 @@ ggplot() +
   labs(title = "Distribution CPUE")
 ```
 
-
 ## Fit the `gam()` for the cpue
 
 ```{r}
@@ -179,7 +179,9 @@ cpue_glm <- gam(cpue ~ treatment + s(gillnet_pair, bs = 're'),
                 family = tw(link = log),
                 data = cpue)
 ```
+
 ## Calculate predictions for mean and standard errors
+
 ```{r}
 # generate predictions for bpue data
 prediction_turtle <- stats::predict(bpue_glm, data = bpue, se.fit = TRUE, type = "response")
@@ -237,6 +239,56 @@ cpue_prediction %>%
        title = "Predicted target fish CPUE increases with illuminated nets")
 ```
 
-# Residual plots?
+# Parametric Checks
+
+## Distribution Determination Using AIC 
+
+```{r}
+## AIC comparison 
+# Looking for lowest score to determine best distribution
+bpue_gaussian <- gam(bpue ~ treatment + s(gillnet_pair, bs = 're'), 
+                     family = gaussian(link = "log"),
+                     data = turtle_bpue)
+
+#Tweedie is best fit with parsimony!
+AIC(turtle_bpue_glm, bpue_gaussian)
+```
+
+```{r}
+## AIC comparison 
+# Looking for lowest score to determine best distribution
+cpue_gaussian <- gam(cpue ~ treatment + s(gillnet_pair, bs = 're'), 
+                     family = gaussian(link = "log"),
+                     data = cpue)
+
+#Tweedie is best fit with parsimony!
+AIC(cpue_glm, cpue_gaussian)
+```
+
+## Residual plots
+
+In a simple linear regression (OLS), residuals can be observed directly because they are assumed to be normally distributed. In a GLMM, however, residuals are not expected to be normally distributed given that GLMMs work well for non-normally distributed data, as is common with ecological data. Here, `gam.check()` from the `mgcv` package was used to assess model fit based on residual plots, a QQ plot, and basis size checks to verify that the Tweedie distribution is appropriate for the data.
+
+### Turtle BPUE Residual Plot Check 
+
+```{r}
+#| message: false
+# Check built in residual plots
+gam.check(turtle_bpue_glm)
+```
+
+`gam_check()` produces four diagnostic plots to assess the model fit:
+
+-    QQ plot: Points follow the linear fit relatively well with some deviance in the upper tail.
+
+-   
+
+### CPUE Residual Plot Check
+
+```{r}
+#| message: false
+# Check built in residual plots
+gam.check(cpue_glm)
+```
 
 # Confidence Intervals with bootstrapping 10,000 simulations
