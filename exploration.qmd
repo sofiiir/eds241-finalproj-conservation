@@ -6,9 +6,9 @@ warning: false
 message: false
 ---
 
-# Replicating Senko, J. 2025 
+# Replicating Senko, J. et al. 2025 
 
-This quarto document replicates the study Senko, J. 2025 studying how illuminating fish nets influences target fish catch and by-catch. This study explores the sustainable solution of using solar energy light sticks to illuminate nets with the goal of avoiding sea turtle by-catch. The original study analyzes the Bycatch Per Unit Effort (BPUE) of sea-turtles and the Catch Per Unit Effort (CPUE) for target fish species. We added an analysis of BPUE for all species to more thoroughly analyze the data. 
+This quarto document replicates the study Senko, J. et al. 2025 studying how illuminating fish nets influences target fish catch and by-catch. This study explores the sustainable solution of using solar energy light sticks to illuminate nets with the goal of avoiding sea turtle by-catch. The original study analyzes the Bycatch Per Unit Effort (BPUE) of sea-turtles and the Catch Per Unit Effort (CPUE) for target fish species. We added an analysis of BPUE for all species to more thoroughly analyze the data. 
 
 Load libraries
 
@@ -182,12 +182,18 @@ cpue_glm <- gam(cpue ~ treatment + s(gillnet_pair, bs = 're'),
 ## Calculate predictions for mean and standard errors
 ```{r}
 # generate predictions for bpue data
-prediction_turtle <- stats::predict(bpue_glm, data = bpue, se.fit = TRUE, type = "response")
+prediction_turtle <- stats::predict(bpue_glm, 
+                                    data = bpue, 
+                                    se.fit = TRUE, 
+                                    type = "response")
 # join predictions to original data
 bpue_prediction <- cbind(bpue, as.data.frame(prediction_turtle))
 
 # generate predictions for cpue data
-prediction_fish <- stats::predict(cpue_glm, data = cpue, se.fit = TRUE, type = "response")
+prediction_fish <- stats::predict(cpue_glm, 
+                                  data = cpue, 
+                                  se.fit = TRUE, 
+                                  type = "response")
 # join predictions to original data
 cpue_prediction <- cbind(cpue, as.data.frame(prediction_fish))
 
@@ -239,4 +245,149 @@ cpue_prediction %>%
 
 # Residual plots?
 
-# Confidence Intervals with bootstrapping 10,000 simulations
+# Confidence Intervals 
+
+
+### Turtle by-catch confidence intervals
+
+
+The simplest way to get confidence intervals for the data is to use the `predict()` function with the argument `se.fit = TRUE`. This is completed below, however, Senko, J. et al. 2025 state they utilize a bootstrap analysis with 10,000 simulations. This is completed below. 
+
+
+```{r}
+# calculate standard error 
+turtle_se <- predict(object = turtle_bpue_glm, 
+                     newdata = turtle_prediction, 
+                     type = 'link', 
+                      se.fit = TRUE)
+
+# inverse link function 
+linkinv <- family(turtle_bpue_glm)$linkinv
+
+
+bpue_prediction <- bpue_prediction %>% 
+  mutate(
+    # P in link space 
+    link_p = turtle_se$fit, 
+    
+    # CI in link space 
+    link_p_se = turtle_se$se.fit,
+    link_p_lwr = qnorm(0.025, mean = bpue, sd = link_p_se),
+    link_p_upr = qnorm(0.975, mean = bpue, sd = link_p_se),
+    
+    # CI in response space 
+    prediction_se = linkinv(link_p),
+    ci_lower = linkinv(link_p_lwr),
+    ci_upper = linkinv(link_p_upr)
+  )
+```
+
+
+### Fish catch confidence intervals
+```{r}
+# calculate standard error 
+cpue_se <- predict(object = cpue_glm, 
+                  newdata = cpue_prediction, 
+                    type = 'link', 
+                      se.fit = TRUE)
+
+# inverse link function 
+linkinv <- family(turtle_bpue_glm)$linkinv
+
+
+cpue_prediction <- cpue_prediction %>% 
+  mutate(
+    # P in link space 
+    link_p = cpue_se$fit, 
+    
+    # CI in link space 
+    link_p_se = cpue_se$se.fit,
+    link_p_lwr = qnorm(0.025, mean = cpue, sd = link_p_se),
+    link_p_upr = qnorm(0.975, mean = cpue, sd = link_p_se),
+    
+    # CI in response space 
+    prediction_se = linkinv(link_p),
+    ci_lower = linkinv(link_p_lwr),
+    ci_upper = linkinv(link_p_upr)
+  )
+```
+
+
+ # Bootstrap 10,000 simulations
+ 
+  Note: Each bootstrap runs with a warning since not all of the levels of gillnet_pair factors are included in each iteration of the bootstraps and therefore predictions for that factor cannot be calculated. After much research this does not affect the effectiveness of the bootstrap. These warning are suppressed. 
+  
+ ### Run bootstrap for turtle by-catch
+ Create predictions for only turtle by-catch for bootstrapping.
+```{r}
+# generate predictions for bpue data
+prediction_turtle <- predict(turtle_bpue_glm, 
+                             data = turtle_bpue, 
+                             se.fit = TRUE, 
+                             type = "response")
+
+# join predictions to original data
+turtle_prediction <- cbind(turtle_bpue, as.data.frame(prediction_turtle))
+```
+ Bootstrap the turtle by-catch data. 
+
+```{r}
+#| warning: false
+
+# reiterate through the boot 1000 times
+boot <-  map_dfr(1:10000, \(i) {
+
+  # sample with replacement
+  boot_sample <- slice_sample(turtle_bpue, n=112, replace = TRUE)
+  
+  # run a GLMM on every single boot sample
+  boot_mod <- gam(bpue ~ treatment + s(gillnet_pair, bs = 're'),
+                       family = tw(link = "log"),
+                       data = boot_sample)
+
+    # predict the boots values (the outcomes are best fit lines)
+  mutate(turtle_prediction, 
+         turtle_pred = predict(boot_mod, 
+                 newdata = turtle_prediction, 
+                 type = "response"),
+         boot = i)
+})
+```
+Create confidence intervals utilizing the bootstrapped data.
+```{r}
+turtle_boot_ci <- boot |> 
+  summarise(bpue_lwr = quantile(turtle_pred, 0.025),
+            bpue_upr = quantile(turtle_pred, 0.975),
+            .by = c(animal_type, gillnet_pair, treatment))
+```
+ 
+ ### Run bootstrap for CPUE
+```{r}
+#| warning: false
+
+# reiterate through the boot 1000 times
+boot <-  map_dfr(1:10000, \(i) {
+
+  # sample with replacement
+  boot_sample <- slice_sample(cpue, n=280, replace = TRUE)
+  
+  # run a GLMM on every single boot sample
+  boot_mod <- gam(cpue ~ treatment + s(gillnet_pair, bs = 're'),
+                     family = tw(link = "log"),
+                     data = boot_sample)
+
+    # predict the boots values (the outcomes are best fit lines)
+  mutate(cpue_prediction, 
+         cpue_pred = predict(boot_mod, 
+                 newdata = cpue_prediction, 
+                 type = "response"),
+         boot = i)
+})
+```
+Create confidence intervals utilizing the bootstrapped data.
+```{r}
+boot_ci_cpue <- boot |>
+  summarise(cpue_lwr = quantile(cpue_pred, 0.025),
+            cpue_upr = quantile(cpue_pred, 0.975),
+            .by = c(catch, gillnet_pair, treatment))
+```
