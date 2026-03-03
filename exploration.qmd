@@ -26,6 +26,18 @@ Load data
 catch_data <- read_csv(here("data", "fishnet_illumination_bpue.csv"))
 ```
 
+## Data Description
+
+The data for this study, Senko et al 2025, consists of 4 columns and 784 rows.
+
+| Column Header | gillnet_pair | animal_type | exp_unit | bpue |
+|----|----|----|----|----|
+| Description | A numeric value 1-28 indicating which gillnet pair this sample is from. | Categorical variable describing which animal type this observation is for. | Categorical variable indicating treatment (illuminated) or control. | Numeric value of catch. This number is on the scale of bpue or cpue depending on animal type. |
+
+Our key outcome variable for this study is bpue/cpue, with variations of animal type as a grouping variable (turtle bpue or target fish cpue). Our treatment is exp_unit, indicating if that gillnet bycatch observation was from an illuminated net or not. This study compared 28 gillnet pairs of equal size/material over a time period of July-September 2019 (assessing sea turtle bycatch) and February-March 2020 (assessing target fish catch). These experiments were conducted in Baja California Sur (BCS), Mexico, where bottom-set gillnet results in high bycatch rates and subsequent mortality of sea turtles.
+
+Each row is an observation of total bpue/cpue for that gillnet pair, treatment or control type, and animal type for the time period of this experiment. We have cleaned column headers/variable names and have pivoted the data from wide to long before reading in data to this script. We did not perform any data cleaning that resulted in loss of data. 
+
 # General Linear Mixed Model (GLMM) with a Tweedie distribution
 
 ## BPUE and CPUE data frame cleaning
@@ -445,3 +457,29 @@ boot_ci_cpue <- boot |>
             cpue_upr = quantile(cpue_pred, 0.975),
             .by = c(catch, gillnet_pair, treatment))
 ```
+
+
+# Conclusions
+- Causal identification
+credible? 
+
+- assumptions
+what are they, did they have them?
+  - Response variables followed Tweedie exponential dispersion model (variance is proportional to power of the mean `p`)
+  - Data are non-negative, continuous (skewed right)
+  - The relationship between predictor and log-transformed mean is linear
+  - quantile residuals follow a normal distribution
+  - power law: spread of residuals gets larger as the mean gets larger
+
+- sampling validity
+who is in the sample, can results be generalized?
+  - very small sample size of target fish (n = 21) vs sea turtle bycatch (n = 67)
+  - only one sampling location
+
+- measurement
+are outcome/treatment variables measured accurately without bias?
+  - Sampling for sea turtle bycatch was checked every hour, but target fish experiment was not. All deployed for the same amount of time though (overnight 11-12 hours).
+  - 28 net pairs for sea turtle bycatch, and 14 net pairs for target fish experiments.
+  - gillnet pairs were identical and similar material to what is already used, and deployed during times fishing would naturally occur.
+
+- other limitations?
