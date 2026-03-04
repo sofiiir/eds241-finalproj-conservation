@@ -31,12 +31,12 @@ catch_data <- read_csv(here("data", "fishnet_illumination_bpue.csv"))
 The data for this study, Senko et al 2025, consists of 4 columns and 784 rows.
 
 | Column Header | gillnet_pair | animal_type | exp_unit | bpue |
-|----|----|----|----|----|
+|---------------|---------------|---------------|---------------|---------------|
 | Description | A numeric value 1-28 indicating which gillnet pair this sample is from. | Categorical variable describing which animal type this observation is for. | Categorical variable indicating treatment (illuminated) or control. | Numeric value of catch. This number is on the scale of bpue or cpue depending on animal type. |
 
 Our key outcome variable for this study is bpue/cpue, with variations of animal type as a grouping variable (turtle bpue or target fish cpue). Our treatment is exp_unit, indicating if that gillnet bycatch observation was from an illuminated net or not. This study compared 28 gillnet pairs of equal size/material over a time period of July-September 2019 (assessing sea turtle bycatch) and February-March 2020 (assessing target fish catch). These experiments were conducted in Baja California Sur (BCS), Mexico, where bottom-set gillnet results in high bycatch rates and subsequent mortality of sea turtles.
 
-Each row is an observation of total bpue/cpue for that gillnet pair, treatment or control type, and animal type for the time period of this experiment. We have cleaned column headers/variable names and have pivoted the data from wide to long before reading in data to this script. We did not perform any data cleaning that resulted in loss of data. 
+Each row is an observation of total bpue/cpue for that gillnet pair, treatment or control type, and animal type for the time period of this experiment. We have cleaned column headers/variable names and have pivoted the data from wide to long before reading in data to this script. We did not perform any data cleaning that resulted in loss of data.
 
 # General Linear Mixed Model (GLMM) with a Tweedie distribution
 
@@ -257,7 +257,7 @@ cpue_prediction %>%
        title = "Predicted target fish CPUE increases with illuminated nets")
 ```
 
-# Parametric Checks
+# Parametric and Assumption Checks
 
 ## Distribution Determination Using AIC
 
@@ -283,30 +283,82 @@ cpue_gaussian <- gam(cpue ~ treatment + s(gillnet_pair, bs = 're'),
 AIC(cpue_glm, cpue_gaussian)
 ```
 
-## Residual plots
+## Residual Plots
 
-In a simple linear regression (OLS), residuals can be observed directly because they are assumed to be normally distributed. In a GLMM, however, residuals are not expected to be normally distributed given that GLMMs work well for non-normally distributed data, as is common with ecological data. Here, `gam.check()` from the `mgcv` package was used to assess model fit based on residual plots, a QQ plot, and basis size checks to verify that the Tweedie distribution is appropriate for the data.
-
-### Turtle BPUE Residual Plot Check
+In a simple linear regression (OLS), residuals can be observed directly because they are assumed to be normally distributed. In a GLMM, however, residuals are not expected to be normally distributed given that GLMMs work well for non-normally distributed data, as is common with ecological data. Here, residual plots were created manually to assess model fit and verify that the Tweedie distribution with a log link is appropriate is for the data. The residual plot checks for systematic patterns that would indicate a poor fit.
 
 ```{r}
 #| message: false
-# Check built in residual plots
-gam.check(turtle_bpue_glm)
+# Create residuals plot based on fitted values and residuals of glmm
+data.frame(fitted = fitted(turtle_bpue_glm), residuals = residuals(turtle_bpue_glm)) %>% 
+  ggplot(aes(x = fitted, y = residuals)) + geom_point(shape = 21) + 
+  geom_hline(yintercept = 0, color = "red", linetype = "solid") + 
+  theme_minimal() + labs(x = "Fitted Values",
+         y = "Residuals",
+         title = "Residuals vs Fitted of Turtle BPUE GLMM")
 ```
 
-`gam_check()` produces four diagnostic plots to assess the model fit:
-
--   QQ plot: Points follow the linear fit relatively well with some deviance in the upper tail.
-
--   
-
-### CPUE Residual Plot Check
-
 ```{r}
 #| message: false
-# Check built in residual plots
-gam.check(cpue_glm)
+# Create residuals plot based on fitted values and residuals of glmm
+data.frame(fitted = fitted(cpue_glm), residuals = residuals(cpue_glm)) %>% 
+  ggplot(aes(x = fitted, y = residuals)) + geom_point(shape = 21) + 
+  geom_hline(yintercept = 0, color = "red", linetype = "solid") + 
+  theme_minimal() + labs(x = "Fitted Values",
+         y = "Residuals",
+         title = "Residuals vs Fitted of CPUE GLMM")
+```
+
+### Log Link Assumption Check
+
+Here, the log-transformed sea turtle BPUE and CPUE outcomes were plotted against treatment to verify the log-linear assumption, confirming that the relationship between the treatment and the ouctome is reasonable on the log scale.
+
+```{r}
+# Turtle BPUE: Predictor vs log(outcome)
+turtle_bpue <- turtle_bpue %>% 
+  mutate(log_bpue = log(bpue))
+
+# Plot
+turtle_bpue %>% ggplot(aes(x = treatment, y = log_bpue, 
+                           color = treatment)) +
+  geom_jitter(width = .2, alpha = .6) +
+  geom_boxplot(aes(fill = treatment), alpha = .3) +
+  scale_color_manual(values = c("control" = "#000000", "illuminated" = "#39f72e")) + 
+  scale_fill_manual(values = c("control" = "#000000", "illuminated" = "#39f72e")) +
+  theme_minimal() +  
+  labs(x = "Treatment", y = "log(Sea Turtle BPUE)", title = "Treatment vs log(BPUE)")+ 
+  guides(fill = "none") +
+  theme(panel.background = element_rect(fill = "#2d2f33"),
+        plot.background = element_rect(fill = "#2d2f33"),
+        panel.grid = element_blank(),
+        axis.text = element_text(color = "white"),
+        axis.title.y = element_text(color = "white"),
+        legend.position = "none",
+        title = element_text(color = "white")) 
+```
+
+```{r}
+# CPUE: Predictor vs log(outcome)
+cpue <- cpue %>% 
+  mutate(log_cpue = log(cpue))
+
+# Plot
+cpue %>% ggplot(aes(x = treatment, y = log_cpue, 
+                           color = treatment)) +
+  geom_jitter(width = .2, alpha = .6) +
+  geom_boxplot(aes(fill = treatment), alpha = .3) +
+  scale_color_manual(values = c("control" = "#000000", "illuminated" = "#39f72e")) + 
+  scale_fill_manual(values = c("control" = "#000000", "illuminated" = "#39f72e")) +
+  theme_minimal() +  
+  labs(x = "Treatment", y = "log(CPUE)", title = "Treatment vs log(CPUE)")+ 
+  guides(fill = "none") +
+  theme(panel.background = element_rect(fill = "#2d2f33"),
+        plot.background = element_rect(fill = "#2d2f33"),
+        panel.grid = element_blank(),
+        axis.text = element_text(color = "white"),
+        axis.title.y = element_text(color = "white"),
+        legend.position = "none",
+        title = element_text(color = "white")) 
 ```
 
 # Confidence Intervals
@@ -458,28 +510,27 @@ boot_ci_cpue <- boot |>
             .by = c(catch, gillnet_pair, treatment))
 ```
 
-
 # Conclusions
-- Causal identification
-credible? 
 
-- assumptions
-what are they, did they have them?
-  - Response variables followed Tweedie exponential dispersion model (variance is proportional to power of the mean `p`)
-  - Data are non-negative, continuous (skewed right)
-  - The relationship between predictor and log-transformed mean is linear
-  - quantile residuals follow a normal distribution
-  - power law: spread of residuals gets larger as the mean gets larger
+-   Causal identification credible?
 
-- sampling validity
-who is in the sample, can results be generalized?
-  - very small sample size of target fish (n = 21) vs sea turtle bycatch (n = 67)
-  - only one sampling location
+-   assumptions what are they, did they have them?
 
-- measurement
-are outcome/treatment variables measured accurately without bias?
-  - Sampling for sea turtle bycatch was checked every hour, but target fish experiment was not. All deployed for the same amount of time though (overnight 11-12 hours).
-  - 28 net pairs for sea turtle bycatch, and 14 net pairs for target fish experiments.
-  - gillnet pairs were identical and similar material to what is already used, and deployed during times fishing would naturally occur.
+    -   Response variables followed Tweedie exponential dispersion model (variance is proportional to power of the mean `p`)
+    -   Data are non-negative, continuous (skewed right)
+    -   The relationship between predictor and log-transformed mean is linear
+    -   quantile residuals follow a normal distribution
+    -   power law: spread of residuals gets larger as the mean gets larger
 
-- other limitations?
+-   sampling validity who is in the sample, can results be generalized?
+
+    -   very small sample size of target fish (n = 21) vs sea turtle bycatch (n = 67)
+    -   only one sampling location
+
+-   measurement are outcome/treatment variables measured accurately without bias?
+
+    -   Sampling for sea turtle bycatch was checked every hour, but target fish experiment was not. All deployed for the same amount of time though (overnight 11-12 hours).
+    -   28 net pairs for sea turtle bycatch, and 14 net pairs for target fish experiments.
+    -   gillnet pairs were identical and similar material to what is already used, and deployed during times fishing would naturally occur.
+
+-   other limitations?
