@@ -92,19 +92,24 @@ bpue <- bpue |>
 ### Initial exploration plot
 
 ```{r}
-ggplot(bpue, aes(x= gillnet_pair, y = bpue, color = animal_type)) + 
-  geom_point() +
-  facet_wrap(~treatment) + 
-  theme_minimal()
-
 ggplot() +
   geom_histogram(data = bpue, 
-                 aes(x = bpue), 
+                 aes(x = bpue,
+                     fill = treatment), 
                  width = 0.2) +
   facet_wrap(~treatment) + 
   theme_minimal() +
-  labs(title = "Distribution BPUE")
-
+  scale_fill_manual(values = c("control" = "#000000",
+                               "illuminated" = "#39f72e")) +
+  labs(title = "Distribution BPUE") +
+  theme(panel.background = element_rect(fill = "#2d2f33"),
+        plot.background = element_rect(fill = "#2d2f33"),
+        panel.grid = element_blank(),
+        axis.text = element_text(color = "white"),
+        axis.title.y = element_text(color = "white"),
+        legend.position = "none",
+        title = element_text(color = "white"),
+        strip.text = element_text(color = "white")) 
 ```
 
 ## Fit the `gam()` for the bpue
@@ -135,18 +140,22 @@ turtle_bpue <- turtle_bpue |>
 ```{r}
 turtle_bpue |> 
   filter(animal_type == "loggerhead_number_bpue") |> 
-ggplot(aes(x= gillnet_pair, y = bpue, color = animal_type)) + 
-  geom_point() +
-  facet_wrap(~treatment) + 
-  theme_minimal()
-
-turtle_bpue |> 
-  filter(animal_type == "loggerhead_number_bpue") |> 
-ggplot(aes(x = bpue)) +
+ggplot(aes(x = bpue,
+           fill = treatment)) +
   geom_bar(width = 0.2) +
   facet_wrap(~treatment) + 
+    scale_fill_manual(values = c("control" = "#000000",
+                               "illuminated" = "#39f72e")) +
   theme_minimal() +
-  labs(title = "Distribution of Loggerhead BPUE Counts")
+  labs(title = "Distribution of Loggerhead BPUE Counts") +
+theme(panel.background = element_rect(fill = "#2d2f33"),
+        plot.background = element_rect(fill = "#2d2f33"),
+        panel.grid = element_blank(),
+        axis.text = element_text(color = "white"),
+        axis.title.y = element_text(color = "white"),
+        legend.position = "none",
+        title = element_text(color = "white"),
+        strip.text = element_text(color = "white")) 
 
 ```
 
@@ -170,18 +179,24 @@ cpue <- cpue |>
 ```
 
 ```{r}
-ggplot(cpue, aes(x= gillnet_pair, y = cpue, color = catch)) + 
-  geom_point() +
-  facet_wrap(~treatment) + 
-  theme_minimal()
-
 ggplot() +
   geom_histogram(data = cpue, 
-                 aes(x = cpue), 
+                 aes(x = cpue,
+                     fill = treatment), 
                  width = 0.2) +
   facet_wrap(~treatment) + 
+    scale_fill_manual(values = c("control" = "#000000",
+                               "illuminated" = "#39f72e")) +
   theme_minimal() +
-  labs(title = "Distribution CPUE")
+  labs(title = "Distribution CPUE") +
+theme(panel.background = element_rect(fill = "#2d2f33"),
+        plot.background = element_rect(fill = "#2d2f33"),
+        panel.grid = element_blank(),
+        axis.text = element_text(color = "white"),
+        axis.title.y = element_text(color = "white"),
+        legend.position = "none",
+        title = element_text(color = "white"),
+        strip.text = element_text(color = "white")) 
 ```
 
 ## Fit the `gam()` for the cpue
@@ -365,72 +380,30 @@ cpue %>% ggplot(aes(x = treatment, y = log_cpue,
 
 ### Turtle by-catch confidence intervals
 
-The simplest way to get confidence intervals for the data is to use the `predict()` function with the argument `se.fit = TRUE`. This is completed below, however, Senko, J. et al. 2025 state they utilize a bootstrap analysis with 10,000 simulations. This is completed below.
+Senko, J. et al. 2025 state they utilize a bootstrap analysis with 10,000 simulations to calculate confidence intervals. Bootstrapping creates confidence intervals by creating simulations through resampling the data with replacement to analyze an estimate of the true populations' data distribution. To complete bootstrapping six steps are taken:
 
-```{r}
-# calculate standard error 
-turtle_se <- predict(object = turtle_bpue_glm, 
-                     newdata = turtle_prediction, 
-                     type = 'link', 
-                      se.fit = TRUE)
+1. Create predictions for the outcome based on the sample data.
 
-# inverse link function 
-linkinv <- family(turtle_bpue_glm)$linkinv
+2. Sample from the predictions with replacement. This is repeated a defined number of times. To maintain consistency with the predictions, sampling with replacement is completed the based on the number of predicted observations. 
 
+3. Run a GLMM Tweedie distribution analysis on the boot sample.
 
-bpue_prediction <- bpue_prediction %>% 
-  mutate(
-    # P in link space 
-    link_p = turtle_se$fit, 
-    
-    # CI in link space 
-    link_p_se = turtle_se$se.fit,
-    link_p_lwr = qnorm(0.025, mean = bpue, sd = link_p_se),
-    link_p_upr = qnorm(0.975, mean = bpue, sd = link_p_se),
-    
-    # CI in response space 
-    prediction_se = linkinv(link_p),
-    ci_lower = linkinv(link_p_lwr),
-    ci_upper = linkinv(link_p_upr)
-  )
-```
+4. Save the prediction values
 
-### Fish catch confidence intervals
+5. Repeat the bootstrapping practice to gat a better estimate. In this case the bootstrap was run 10,000 times. 
 
-```{r}
-# calculate standard error 
-cpue_se <- predict(object = cpue_glm, 
-                  newdata = cpue_prediction, 
-                    type = 'link', 
-                      se.fit = TRUE)
+6. Calculate the desired statistic from these bootstrapped estimates of the outcome. In this case, confidence intervals are calculated. 
 
-# inverse link function 
-linkinv <- family(turtle_bpue_glm)$linkinv
+The above steps are completed for each set of data for which the confidence intervals need to be calculated. These steps were run for the turtle by-catch data and the catch per unit effort data. 
 
 
-cpue_prediction <- cpue_prediction %>% 
-  mutate(
-    # P in link space 
-    link_p = cpue_se$fit, 
-    
-    # CI in link space 
-    link_p_se = cpue_se$se.fit,
-    link_p_lwr = qnorm(0.025, mean = cpue, sd = link_p_se),
-    link_p_upr = qnorm(0.975, mean = cpue, sd = link_p_se),
-    
-    # CI in response space 
-    prediction_se = linkinv(link_p),
-    ci_lower = linkinv(link_p_lwr),
-    ci_upper = linkinv(link_p_upr)
-  )
-```
+# Bootstrap 10,000 simulations
 
-\# Bootstrap 10,000 simulations
+Note: Each bootstrap runs with a warning since not all of the levels of `gillnet_pair`, which is classified as a factor, are included in each iteration of the bootstraps and therefore predictions for that factor cannot be calculated. After much research this does not affect the effectiveness of the bootstrap. These warning are suppressed.
 
-Note: Each bootstrap runs with a warning since not all of the levels of gillnet_pair factors are included in each iteration of the bootstraps and therefore predictions for that factor cannot be calculated. After much research this does not affect the effectiveness of the bootstrap. These warning are suppressed.
+### Run bootstrap for turtle by-catch 
 
-\### Run bootstrap for turtle by-catch Create predictions for only turtle by-catch for bootstrapping.
-
+Create predictions for only turtle by-catch.
 ```{r}
 # generate predictions for bpue data
 prediction_turtle <- predict(turtle_bpue_glm, 
@@ -443,7 +416,6 @@ turtle_prediction <- cbind(turtle_bpue, as.data.frame(prediction_turtle))
 ```
 
 Bootstrap the turtle by-catch data.
-
 ```{r}
 #| warning: false
 
@@ -458,7 +430,7 @@ boot <-  map_dfr(1:10000, \(i) {
                        family = tw(link = "log"),
                        data = boot_sample)
 
-    # predict the boots values (the outcomes are best fit lines)
+  # predict the boots values
   mutate(turtle_prediction, 
          turtle_pred = predict(boot_mod, 
                  newdata = turtle_prediction, 
@@ -476,7 +448,7 @@ turtle_boot_ci <- boot |>
             .by = c(animal_type, gillnet_pair, treatment))
 ```
 
-\### Run bootstrap for CPUE
+### Run bootstrap for CPUE
 
 ```{r}
 #| warning: false
@@ -492,7 +464,7 @@ boot <-  map_dfr(1:10000, \(i) {
                      family = tw(link = "log"),
                      data = boot_sample)
 
-    # predict the boots values (the outcomes are best fit lines)
+    # predict the boots values 
   mutate(cpue_prediction, 
          cpue_pred = predict(boot_mod, 
                  newdata = cpue_prediction, 
@@ -526,6 +498,7 @@ boot_ci_cpue <- boot |>
 
     -   very small sample size of target fish (n = 21) vs sea turtle bycatch (n = 67)
     -   only one sampling location
+    
 
 -   measurement are outcome/treatment variables measured accurately without bias?
 
@@ -533,4 +506,8 @@ boot_ci_cpue <- boot |>
     -   28 net pairs for sea turtle bycatch, and 14 net pairs for target fish experiments.
     -   gillnet pairs were identical and similar material to what is already used, and deployed during times fishing would naturally occur.
 
--   other limitations?
+-   other limitations
+   -   BPUE and CPUE studies were conducted in different time frames 
+
+# References 
+- Senko, J. F., J. Wang, K. M. Burgher, et  al. 2025. “Harnessing SolarEnergy to Reduce Sea Turtle Bycatch.” Conservation Letters 18, no. 5:e13151.
