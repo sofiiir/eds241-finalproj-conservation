@@ -508,3 +508,6 @@ boot_ci_cpue <- boot |>
 
 -   other limitations
    -   BPUE and CPUE studies were conducted in different time frames 
+
+# References 
+- Senko, J. F., J. Wang, K. M. Burgher, et  al. 2025. “Harnessing SolarEnergy to Reduce Sea Turtle Bycatch.” Conservation Letters 18, no. 5:e13151.
