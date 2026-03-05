@@ -6,9 +6,9 @@ warning: false
 message: false
 ---
 
-# Replicating Senko, J. et al. 2025 
+# Replicating Senko, J. et al. 2025
 
-This quarto document replicates the study Senko, J. et al. 2025 studying how illuminating fish nets influences target fish catch and by-catch. This study explores the sustainable solution of using solar energy light sticks to illuminate nets with the goal of avoiding sea turtle by-catch. The original study analyzes the Bycatch Per Unit Effort (BPUE) of sea-turtles and the Catch Per Unit Effort (CPUE) for target fish species. We added an analysis of BPUE for all species to more thoroughly analyze the data. 
+This quarto document replicates the study Senko, J. et al. 2025 studying how illuminating fish nets influences target fish catch and by-catch. This study explores the sustainable solution of using solar energy light sticks to illuminate nets with the goal of avoiding sea turtle by-catch. The original study analyzes the Bycatch Per Unit Effort (BPUE) of sea-turtles and the Catch Per Unit Effort (CPUE) for target fish species. We added an analysis of BPUE for all species to more thoroughly analyze the data.
 
 Load libraries
 
@@ -17,6 +17,7 @@ library(tidyverse)
 library(mgcv)
 library(stats)
 library(here)
+library(DHARMa)
 ```
 
 Load data
@@ -24,6 +25,18 @@ Load data
 ```{r}
 catch_data <- read_csv(here("data", "fishnet_illumination_bpue.csv"))
 ```
+
+## Data Description
+
+The data for this study, Senko et al 2025, consists of 4 columns and 784 rows.
+
+| Column Header | gillnet_pair | animal_type | exp_unit | bpue |
+|---------------|---------------|---------------|---------------|---------------|
+| Description | A numeric value 1-28 indicating which gillnet pair this sample is from. | Categorical variable describing which animal type this observation is for. | Categorical variable indicating treatment (illuminated) or control. | Numeric value of catch. This number is on the scale of bpue or cpue depending on animal type. |
+
+Our key outcome variable for this study is bpue/cpue, with variations of animal type as a grouping variable (turtle bpue or target fish cpue). Our treatment is exp_unit, indicating if that gillnet bycatch observation was from an illuminated net or not. This study compared 28 gillnet pairs of equal size/material over a time period of July-September 2019 (assessing sea turtle bycatch) and February-March 2020 (assessing target fish catch). These experiments were conducted in Baja California Sur (BCS), Mexico, where bottom-set gillnet results in high bycatch rates and subsequent mortality of sea turtles.
+
+Each row is an observation of total bpue/cpue for that gillnet pair, treatment or control type, and animal type for the time period of this experiment. We have cleaned column headers/variable names and have pivoted the data from wide to long before reading in data to this script. We did not perform any data cleaning that resulted in loss of data.
 
 # General Linear Mixed Model (GLMM) with a Tweedie distribution
 
@@ -110,7 +123,6 @@ summary(bpue_glm)
 
 ### Convert appropriate variables to be a factor
 
-
 ```{r}
 turtle_bpue <- turtle_bpue |> 
   mutate(animal_type = as.factor(animal_type), 
@@ -119,6 +131,7 @@ turtle_bpue <- turtle_bpue |>
 ```
 
 ### Initial exploration plot
+
 ```{r}
 turtle_bpue |> 
   filter(animal_type == "loggerhead_number_bpue") |> 
@@ -171,7 +184,6 @@ ggplot() +
   labs(title = "Distribution CPUE")
 ```
 
-
 ## Fit the `gam()` for the cpue
 
 ```{r}
@@ -179,7 +191,9 @@ cpue_glm <- gam(cpue ~ treatment + s(gillnet_pair, bs = 're'),
                 family = tw(link = log),
                 data = cpue)
 ```
+
 ## Calculate predictions for mean and standard errors
+
 ```{r}
 # generate predictions for bpue data
 prediction_turtle <- stats::predict(bpue_glm, 
@@ -243,16 +257,115 @@ cpue_prediction %>%
        title = "Predicted target fish CPUE increases with illuminated nets")
 ```
 
-# Residual plots?
+# Parametric and Assumption Checks
 
-# Confidence Intervals 
+## Distribution Determination Using AIC
 
+```{r}
+## AIC comparison 
+# Looking for lowest score to determine best distribution
+bpue_gaussian <- gam(bpue ~ treatment + s(gillnet_pair, bs = 're'), 
+                     family = gaussian(link = "log"),
+                     data = turtle_bpue)
+
+#Tweedie is best fit with parsimony!
+AIC(turtle_bpue_glm, bpue_gaussian)
+```
+
+```{r}
+## AIC comparison 
+# Looking for lowest score to determine best distribution
+cpue_gaussian <- gam(cpue ~ treatment + s(gillnet_pair, bs = 're'), 
+                     family = gaussian(link = "log"),
+                     data = cpue)
+
+#Tweedie is best fit with parsimony!
+AIC(cpue_glm, cpue_gaussian)
+```
+
+## Residual Plots
+
+In a simple linear regression (OLS), residuals can be observed directly because they are assumed to be normally distributed. In a GLMM, however, residuals are not expected to be normally distributed given that GLMMs work well for non-normally distributed data, as is common with ecological data. Here, residual plots were created manually to assess model fit and verify that the Tweedie distribution with a log link is appropriate is for the data. The residual plot checks for systematic patterns that would indicate a poor fit.
+
+```{r}
+#| message: false
+# Create residuals plot based on fitted values and residuals of glmm
+data.frame(fitted = fitted(turtle_bpue_glm), residuals = residuals(turtle_bpue_glm)) %>% 
+  ggplot(aes(x = fitted, y = residuals)) + geom_point(shape = 21) + 
+  geom_hline(yintercept = 0, color = "red", linetype = "solid") + 
+  theme_minimal() + labs(x = "Fitted Values",
+         y = "Residuals",
+         title = "Residuals vs Fitted of Turtle BPUE GLMM")
+```
+
+```{r}
+#| message: false
+# Create residuals plot based on fitted values and residuals of glmm
+data.frame(fitted = fitted(cpue_glm), residuals = residuals(cpue_glm)) %>% 
+  ggplot(aes(x = fitted, y = residuals)) + geom_point(shape = 21) + 
+  geom_hline(yintercept = 0, color = "red", linetype = "solid") + 
+  theme_minimal() + labs(x = "Fitted Values",
+         y = "Residuals",
+         title = "Residuals vs Fitted of CPUE GLMM")
+```
+
+### Log Link Assumption Check
+
+Here, the log-transformed sea turtle BPUE and CPUE outcomes were plotted against treatment to verify the log-linear assumption, confirming that the relationship between the treatment and the ouctome is reasonable on the log scale.
+
+```{r}
+# Turtle BPUE: Predictor vs log(outcome)
+turtle_bpue <- turtle_bpue %>% 
+  mutate(log_bpue = log(bpue))
+
+# Plot
+turtle_bpue %>% ggplot(aes(x = treatment, y = log_bpue, 
+                           color = treatment)) +
+  geom_jitter(width = .2, alpha = .6) +
+  geom_boxplot(aes(fill = treatment), alpha = .3) +
+  scale_color_manual(values = c("control" = "#000000", "illuminated" = "#39f72e")) + 
+  scale_fill_manual(values = c("control" = "#000000", "illuminated" = "#39f72e")) +
+  theme_minimal() +  
+  labs(x = "Treatment", y = "log(Sea Turtle BPUE)", title = "Treatment vs log(BPUE)")+ 
+  guides(fill = "none") +
+  theme(panel.background = element_rect(fill = "#2d2f33"),
+        plot.background = element_rect(fill = "#2d2f33"),
+        panel.grid = element_blank(),
+        axis.text = element_text(color = "white"),
+        axis.title.y = element_text(color = "white"),
+        legend.position = "none",
+        title = element_text(color = "white")) 
+```
+
+```{r}
+# CPUE: Predictor vs log(outcome)
+cpue <- cpue %>% 
+  mutate(log_cpue = log(cpue))
+
+# Plot
+cpue %>% ggplot(aes(x = treatment, y = log_cpue, 
+                           color = treatment)) +
+  geom_jitter(width = .2, alpha = .6) +
+  geom_boxplot(aes(fill = treatment), alpha = .3) +
+  scale_color_manual(values = c("control" = "#000000", "illuminated" = "#39f72e")) + 
+  scale_fill_manual(values = c("control" = "#000000", "illuminated" = "#39f72e")) +
+  theme_minimal() +  
+  labs(x = "Treatment", y = "log(CPUE)", title = "Treatment vs log(CPUE)")+ 
+  guides(fill = "none") +
+  theme(panel.background = element_rect(fill = "#2d2f33"),
+        plot.background = element_rect(fill = "#2d2f33"),
+        panel.grid = element_blank(),
+        axis.text = element_text(color = "white"),
+        axis.title.y = element_text(color = "white"),
+        legend.position = "none",
+        title = element_text(color = "white")) 
+```
+
+# Confidence Intervals
 
 ### Turtle by-catch confidence intervals
 
-
-The simplest way to get confidence intervals for the data is to use the `predict()` function with the argument `se.fit = TRUE`. This is completed below, however, Senko, J. et al. 2025 state they utilize a bootstrap analysis with 10,000 simulations. This is completed below. 
-
+The simplest way to get confidence intervals for the data is to use the `predict()` function with the argument `se.fit = TRUE`. This is completed below, however, Senko, J. et al. 2025 state they utilize a bootstrap analysis with 10,000 simulations. This is completed below.
 
 ```{r}
 # calculate standard error 
@@ -282,8 +395,8 @@ bpue_prediction <- bpue_prediction %>%
   )
 ```
 
-
 ### Fish catch confidence intervals
+
 ```{r}
 # calculate standard error 
 cpue_se <- predict(object = cpue_glm, 
@@ -312,13 +425,12 @@ cpue_prediction <- cpue_prediction %>%
   )
 ```
 
+\# Bootstrap 10,000 simulations
 
- # Bootstrap 10,000 simulations
- 
-  Note: Each bootstrap runs with a warning since not all of the levels of gillnet_pair factors are included in each iteration of the bootstraps and therefore predictions for that factor cannot be calculated. After much research this does not affect the effectiveness of the bootstrap. These warning are suppressed. 
-  
- ### Run bootstrap for turtle by-catch
- Create predictions for only turtle by-catch for bootstrapping.
+Note: Each bootstrap runs with a warning since not all of the levels of gillnet_pair factors are included in each iteration of the bootstraps and therefore predictions for that factor cannot be calculated. After much research this does not affect the effectiveness of the bootstrap. These warning are suppressed.
+
+\### Run bootstrap for turtle by-catch Create predictions for only turtle by-catch for bootstrapping.
+
 ```{r}
 # generate predictions for bpue data
 prediction_turtle <- predict(turtle_bpue_glm, 
@@ -329,7 +441,8 @@ prediction_turtle <- predict(turtle_bpue_glm,
 # join predictions to original data
 turtle_prediction <- cbind(turtle_bpue, as.data.frame(prediction_turtle))
 ```
- Bootstrap the turtle by-catch data. 
+
+Bootstrap the turtle by-catch data.
 
 ```{r}
 #| warning: false
@@ -353,15 +466,18 @@ boot <-  map_dfr(1:10000, \(i) {
          boot = i)
 })
 ```
+
 Create confidence intervals utilizing the bootstrapped data.
+
 ```{r}
 turtle_boot_ci <- boot |> 
   summarise(bpue_lwr = quantile(turtle_pred, 0.025),
             bpue_upr = quantile(turtle_pred, 0.975),
             .by = c(animal_type, gillnet_pair, treatment))
 ```
- 
- ### Run bootstrap for CPUE
+
+\### Run bootstrap for CPUE
+
 ```{r}
 #| warning: false
 
@@ -384,10 +500,37 @@ boot <-  map_dfr(1:10000, \(i) {
          boot = i)
 })
 ```
+
 Create confidence intervals utilizing the bootstrapped data.
+
 ```{r}
 boot_ci_cpue <- boot |>
   summarise(cpue_lwr = quantile(cpue_pred, 0.025),
             cpue_upr = quantile(cpue_pred, 0.975),
             .by = c(catch, gillnet_pair, treatment))
 ```
+
+# Conclusions
+
+-   Causal identification credible?
+
+-   assumptions what are they, did they have them?
+
+    -   Response variables followed Tweedie exponential dispersion model (variance is proportional to power of the mean `p`)
+    -   Data are non-negative, continuous (skewed right)
+    -   The relationship between predictor and log-transformed mean is linear
+    -   quantile residuals follow a normal distribution
+    -   power law: spread of residuals gets larger as the mean gets larger
+
+-   sampling validity who is in the sample, can results be generalized?
+
+    -   very small sample size of target fish (n = 21) vs sea turtle bycatch (n = 67)
+    -   only one sampling location
+
+-   measurement are outcome/treatment variables measured accurately without bias?
+
+    -   Sampling for sea turtle bycatch was checked every hour, but target fish experiment was not. All deployed for the same amount of time though (overnight 11-12 hours).
+    -   28 net pairs for sea turtle bycatch, and 14 net pairs for target fish experiments.
+    -   gillnet pairs were identical and similar material to what is already used, and deployed during times fishing would naturally occur.
+
+-   other limitations?
