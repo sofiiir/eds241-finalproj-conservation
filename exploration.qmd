@@ -382,28 +382,28 @@ cpue %>% ggplot(aes(x = treatment, y = log_cpue,
 
 Senko, J. et al. 2025 state they utilize a bootstrap analysis with 10,000 simulations to calculate confidence intervals. Bootstrapping creates confidence intervals by creating simulations through resampling the data with replacement to analyze an estimate of the true populations' data distribution. To complete bootstrapping six steps are taken:
 
-1. Create predictions for the outcome based on the sample data.
+1.  Create predictions for the outcome based on the sample data.
 
-2. Sample from the predictions with replacement. This is repeated a defined number of times. To maintain consistency with the predictions, sampling with replacement is completed the based on the number of predicted observations. 
+2.  Sample from the predictions with replacement. This is repeated a defined number of times. To maintain consistency with the predictions, sampling with replacement is completed the based on the number of predicted observations.
 
-3. Run a GLMM Tweedie distribution analysis on the boot sample.
+3.  Run a GLMM Tweedie distribution analysis on the boot sample.
 
-4. Save the prediction values
+4.  Save the prediction values
 
-5. Repeat the bootstrapping practice to gat a better estimate. In this case the bootstrap was run 10,000 times. 
+5.  Repeat the bootstrapping practice to gat a better estimate. In this case the bootstrap was run 10,000 times.
 
-6. Calculate the desired statistic from these bootstrapped estimates of the outcome. In this case, confidence intervals are calculated. 
+6.  Calculate the desired statistic from these bootstrapped estimates of the outcome. In this case, confidence intervals are calculated.
 
-The above steps are completed for each set of data for which the confidence intervals need to be calculated. These steps were run for the turtle by-catch data and the catch per unit effort data. 
-
+The above steps are completed for each set of data for which the confidence intervals need to be calculated. These steps were run for the turtle by-catch data and the catch per unit effort data.
 
 # Bootstrap 10,000 simulations
 
 Note: Each bootstrap runs with a warning since not all of the levels of `gillnet_pair`, which is classified as a factor, are included in each iteration of the bootstraps and therefore predictions for that factor cannot be calculated. After much research this does not affect the effectiveness of the bootstrap. These warning are suppressed.
 
-### Run bootstrap for turtle by-catch 
+### Run bootstrap for turtle by-catch
 
 Create predictions for only turtle by-catch.
+
 ```{r}
 # generate predictions for bpue data
 prediction_turtle <- predict(turtle_bpue_glm, 
@@ -416,6 +416,7 @@ turtle_prediction <- cbind(turtle_bpue, as.data.frame(prediction_turtle))
 ```
 
 Bootstrap the turtle by-catch data.
+
 ```{r}
 #| warning: false
 
@@ -486,6 +487,14 @@ boot_ci_cpue <- boot |>
 
 -   Causal identification credible?
 
+    -   Some evidence for a credible causal identification (see assumptions below), but also some issues:
+
+        -   bycatch and target fish experiments done during different seasons
+
+        -   between-sample conditions were not kept the same
+
+        -   target fish experiment had a much smaller sample size compared to sea turtle bycatch sample size
+
 -   assumptions what are they, did they have them?
 
     -   Response variables followed Tweedie exponential dispersion model (variance is proportional to power of the mean `p`)
@@ -498,7 +507,6 @@ boot_ci_cpue <- boot |>
 
     -   very small sample size of target fish (n = 21) vs sea turtle bycatch (n = 67)
     -   only one sampling location
-    
 
 -   measurement are outcome/treatment variables measured accurately without bias?
 
@@ -507,7 +515,9 @@ boot_ci_cpue <- boot |>
     -   gillnet pairs were identical and similar material to what is already used, and deployed during times fishing would naturally occur.
 
 -   other limitations
-   -   BPUE and CPUE studies were conducted in different time frames 
 
-# References 
-- Senko, J. F., J. Wang, K. M. Burgher, et  al. 2025. “Harnessing SolarEnergy to Reduce Sea Turtle Bycatch.” Conservation Letters 18, no. 5:e13151.
+    -   The authors were looking only at blinking lights as illumination and comparing to previous studies looking only at solid light illumination.
+
+# References
+
+-   Senko, J. F., J. Wang, K. M. Burgher, et al. 2025. “Harnessing SolarEnergy to Reduce Sea Turtle Bycatch.” Conservation Letters 18, no. 5:e13151.
