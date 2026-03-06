@@ -18,6 +18,7 @@ library(mgcv)
 library(stats)
 library(here)
 library(DHARMa)
+library(kableExtra)
 ```
 
 Load data
@@ -476,11 +477,86 @@ boot <-  map_dfr(1:10000, \(i) {
 Create confidence intervals utilizing the bootstrapped data.
 
 ```{r}
-boot_ci_cpue <- boot |>
+cpue_boot_ci <- boot |>
   summarise(cpue_lwr = quantile(cpue_pred, 0.025),
             cpue_upr = quantile(cpue_pred, 0.975),
             .by = c(catch, gillnet_pair, treatment))
 ```
+
+```{r}
+#| echo: false
+
+# lower boot CI
+turtle_boot_ci <- turtle_boot_ci |> 
+  group_by(treatment) |> 
+  mutate(lwr_avg = mean(bpue_lwr, na.rm = TRUE))
+
+# upper boot CI
+turtle_boot_ci <- turtle_boot_ci |> 
+  group_by(treatment) |> 
+  mutate(upr_avg = mean(bpue_upr, na.rm = TRUE))
+
+ill_turtle <- turtle_boot_ci |> 
+  filter(treatment == "illuminated") |> 
+  head(n = 1)
+
+cont_turtle <- turtle_boot_ci |> 
+  filter(treatment == "control") |> 
+  head(n = 1)
+
+CI_df <- tibble(
+  Treatment = c("Illuminated", "Control"),
+  LowerCI = c(ill_turtle$lwr_avg, cont_turtle$lwr_avg),
+  UpperCI = c(ill_turtle$upr_avg, cont_turtle$upr_avg)
+)
+
+turtle_CI <- CI_df |> 
+  kable() |> 
+  kable_styling()
+
+turtle_CI |> 
+  add_header_above(c("Turtle BPUE Confidence Intervals" = 3))
+
+```
+
+```{r}
+#| echo: false
+
+# lower boot CI
+cpue_boot_ci <- cpue_boot_ci |> 
+  group_by(treatment) |> 
+  mutate(lwr_avg = mean(cpue_lwr, na.rm = TRUE))
+
+# upper boot CI
+cpue_boot_ci <- cpue_boot_ci |> 
+  group_by(treatment) |> 
+  mutate(upr_avg = mean(cpue_upr, na.rm = TRUE))
+
+ill_cpue <- cpue_boot_ci |> 
+  filter(treatment == "illuminated") |> 
+  head(n = 1)
+
+cont_cpue <- cpue_boot_ci |> 
+  filter(treatment == "control") |> 
+  head(n = 1)
+
+CI_df <- tibble(
+  Treatment = c("Illuminated", "Control"),
+  LowerCI = c(ill_cpue$lwr_avg, cont_cpue$lwr_avg),
+  UpperCI = c(ill_cpue$upr_avg, cont_cpue$upr_avg)
+)
+
+cpue_CI <- CI_df |> 
+  kable() |> 
+  kable_styling()
+
+cpue_CI |> 
+  add_header_above(c("CPUE Confidence Intervals" = 3))
+
+```
+
+These confidence intervals shows where we think the true population mean falls based on our predictions. The confidence interval for the mean turtle BPUE is significantly smaller in the illuminated gillnet pairs than the confidence interval for  the mean turtle BPUE in the control gillnet pairs. The confidence intervals for the mean CPUE are approximately the same both the illuminated and control groups. This shows that illumination has a greater effect on the mean of turtle BPUE. 
+
 
 # Conclusions
 
