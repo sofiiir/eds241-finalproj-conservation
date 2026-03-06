@@ -391,8 +391,6 @@ cpue %>% ggplot(aes(x = treatment, y = log_cpue,
         title = element_text(color = "white")) 
 ```
 
-Among non-zero observations, the control group shows consistently higher log(BPUE) values than the illuminated group. This helps support the assumption that illumination reduces bycatch proportionally rather than by a fixed amount.
-
 # Confidence Intervals
 
 ### Turtle by-catch confidence intervals
@@ -572,8 +570,7 @@ cpue_CI |>
 
 ```
 
-These confidence intervals shows where we think the true population mean falls based on our predictions. The confidence interval for the mean turtle BPUE is significantly smaller in the illuminated gillnet pairs than the confidence interval for  the mean turtle BPUE in the control gillnet pairs. The confidence intervals for the mean CPUE are approximately the same both the illuminated and control groups. This shows that illumination has a greater effect on the mean of turtle BPUE. 
-
+These confidence intervals shows where we think the true population mean falls based on our predictions. The confidence interval for the mean turtle BPUE is significantly smaller in the illuminated gillnet pairs than the confidence interval for the mean turtle BPUE in the control gillnet pairs. The confidence intervals for the mean CPUE are approximately the same both the illuminated and control groups. This shows that illumination has a greater effect on the mean of turtle BPUE.
 
 # Conclusions
 
