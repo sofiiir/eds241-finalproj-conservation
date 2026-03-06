@@ -277,6 +277,8 @@ cpue_prediction %>%
 
 ## Distribution Determination Using AIC
 
+AIC (Akaike Information Criterion) was used to compare model fit across different distributions while accounting for model complexity. Lower AIC values indicate a better balance between goodness of fit and simplicity. The Tweedie distribution had the lowest AIC for both models, indicating it provided the best fit to the data.
+
 ```{r}
 ## AIC comparison 
 # Looking for lowest score to determine best distribution
@@ -284,7 +286,7 @@ bpue_gaussian <- gam(bpue ~ treatment + s(gillnet_pair, bs = 're'),
                      family = gaussian(link = "log"),
                      data = turtle_bpue)
 
-#Tweedie is best fit with parsimony!
+# Tweedie is best fit with parsimony
 AIC(turtle_bpue_glm, bpue_gaussian)
 ```
 
@@ -295,7 +297,7 @@ cpue_gaussian <- gam(cpue ~ treatment + s(gillnet_pair, bs = 're'),
                      family = gaussian(link = "log"),
                      data = cpue)
 
-#Tweedie is best fit with parsimony!
+# Tweedie is best fit with parsimony
 AIC(cpue_glm, cpue_gaussian)
 ```
 
@@ -305,8 +307,13 @@ In a simple linear regression (OLS), residuals can be observed directly because 
 
 ```{r}
 #| message: false
-# Create residuals plot based on fitted values and residuals of glmm
-data.frame(fitted = fitted(turtle_bpue_glm), residuals = residuals(turtle_bpue_glm)) %>% 
+## Create residuals plot based on fitted values and residuals of glmm
+
+data.frame(
+  fitted = fitted(turtle_bpue_glm), # Use fitted() to simulate glmm fitted values 
+  residuals = residuals(turtle_bpue_glm)) %>% # Use residuals() to obtain glmm fitted values 
+  
+  # Plot
   ggplot(aes(x = fitted, y = residuals)) + geom_point(shape = 21) + 
   geom_hline(yintercept = 0, color = "red", linetype = "solid") + 
   theme_minimal() + labs(x = "Fitted Values",
@@ -316,8 +323,13 @@ data.frame(fitted = fitted(turtle_bpue_glm), residuals = residuals(turtle_bpue_g
 
 ```{r}
 #| message: false
-# Create residuals plot based on fitted values and residuals of glmm
-data.frame(fitted = fitted(cpue_glm), residuals = residuals(cpue_glm)) %>% 
+## Create residuals plot based on fitted values and residuals of glmm
+
+data.frame(
+  fitted = fitted(cpue_glm), # Use fitted() to simulate glmm fitted values 
+  residuals = residuals(cpue_glm)) %>% # Use residuals() to obtain glmm fitted values 
+  
+  # Plot
   ggplot(aes(x = fitted, y = residuals)) + geom_point(shape = 21) + 
   geom_hline(yintercept = 0, color = "red", linetype = "solid") + 
   theme_minimal() + labs(x = "Fitted Values",
@@ -325,11 +337,12 @@ data.frame(fitted = fitted(cpue_glm), residuals = residuals(cpue_glm)) %>%
          title = "Residuals vs Fitted of CPUE GLMM")
 ```
 
-### Log Link Assumption Check
+## Log Link Assumption Check
 
-Here, the log-transformed sea turtle BPUE and CPUE outcomes were plotted against treatment to verify the log-linear assumption, confirming that the relationship between the treatment and the ouctome is reasonable on the log scale.
+Here, the log-transformed sea turtle BPUE and total fish catch (CPUE) outcomes were plotted against treatment to verify the multiplicative (non-fixed) treatment effect assumed by the log link.
 
 ```{r}
+#| warning: false
 # Turtle BPUE: Predictor vs log(outcome)
 turtle_bpue <- turtle_bpue %>% 
   mutate(log_bpue = log(bpue))
@@ -354,7 +367,8 @@ turtle_bpue %>% ggplot(aes(x = treatment, y = log_bpue,
 ```
 
 ```{r}
-# CPUE: Predictor vs log(outcome)
+#| warning: false
+# Total Fish Catch CPUE: Predictor vs log(outcome)
 cpue <- cpue %>% 
   mutate(log_cpue = log(cpue))
 
@@ -376,6 +390,8 @@ cpue %>% ggplot(aes(x = treatment, y = log_cpue,
         legend.position = "none",
         title = element_text(color = "white")) 
 ```
+
+Among non-zero observations, the control group shows consistenly higher log(BPUE) values than the illuminated group. This helps support the assumption that the illumination reduces bycatch proportionally rather than by a fixed amount.
 
 # Confidence Intervals
 
@@ -556,8 +572,7 @@ cpue_CI |>
 
 ```
 
-These confidence intervals shows where we think the true population mean falls based on our predictions. The confidence interval for the mean turtle BPUE is significantly smaller in the illuminated gillnet pairs than the confidence interval for  the mean turtle BPUE in the control gillnet pairs. The confidence intervals for the mean CPUE are approximately the same both the illuminated and control groups. This shows that illumination has a greater effect on the mean of turtle BPUE. 
-
+These confidence intervals shows where we think the true population mean falls based on our predictions. The confidence interval for the mean turtle BPUE is significantly smaller in the illuminated gillnet pairs than the confidence interval for the mean turtle BPUE in the control gillnet pairs. The confidence intervals for the mean CPUE are approximately the same both the illuminated and control groups. This shows that illumination has a greater effect on the mean of turtle BPUE.
 
 # Conclusions
 
