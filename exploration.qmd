@@ -1,7 +1,9 @@
 ---
-title: "exploration"
-format: html
+title: "Reducing Sea Turtle Bycatch with Illuminated Gillnets" 
+subtitle: "GLMM Tweedie - Replicating Senko et. al. 2025"
+format: pdf
 author: Leela Dixit, Sofia Rodas, & Vedika Shirtekar
+date: "03/06/2026"
 warning: false
 message: false
 ---
@@ -112,6 +114,8 @@ ggplot() +
         title = element_text(color = "white"),
         strip.text = element_text(color = "white")) 
 ```
+
+Our entire BPUE data set follow a tweedie distribution: zero-inflated and positively skewed. This does not tell us much about the validitity of our models, but it is good to know.
 
 ## Fit the `gam()` for the bpue
 
