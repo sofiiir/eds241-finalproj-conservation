@@ -1,7 +1,9 @@
 ---
 title: "Replicating Senko, J. et al. 2025, Harnessing Solar Energy to Reduce Sea Turtle Bycatch "
 format: html
+
 author: Leela Dixit, Sofia Rodas, & Vedika Shirtekar
+date: "03/06/2026"
 warning: false
 message: false
 ---
@@ -119,6 +121,8 @@ ggplot() +
         strip.text = element_text(color = "white")) 
 ```
 Bycatch Per Unit Effort (BPUE) has a right-skewed distribution. This distribution means that there a large amount of zeros in the data. 
+
+Our entire BPUE data set follow a tweedie distribution: zero-inflated and positively skewed. This does not tell us much about the validitity of our models, but it is good to know.
 
 ## Fit the `gam()` for the bpue
 
