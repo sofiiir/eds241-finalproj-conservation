@@ -1,18 +1,24 @@
 ---
-title: "Reducing Sea Turtle Bycatch with Illuminated Gillnets" 
-subtitle: "GLMM Tweedie - Replicating Senko et. al. 2025"
-format: pdf
+title: "Replicating Senko, J. et al. 2025, Harnessing Solar Energy to Reduce Sea Turtle Bycatch "
+format: html
+
 author: Leela Dixit, Sofia Rodas, & Vedika Shirtekar
 date: "03/06/2026"
 warning: false
 message: false
 ---
 
-# Replicating Senko, J. et al. 2025
+![Man fishing with illuminated nets](images/fishing_illum.png)
 
-This quarto document replicates the study Senko, J. et al. 2025 studying how illuminating fish nets influences target fish catch and by-catch. This study explores the sustainable solution of using solar energy light sticks to illuminate nets with the goal of avoiding sea turtle by-catch. The original study analyzes the Bycatch Per Unit Effort (BPUE) of sea-turtles and the Catch Per Unit Effort (CPUE) for target fish species. We added an analysis of BPUE for all species to more thoroughly analyze the data.
+# Introduction
 
-Load libraries
+This blog post replicates the study Harnessing Solar Energy to Reduce Sea Turtle Bycatch, Senko, J. et al. 2025, which studies how illuminating fish nets influences target fish catch and bycatch. This study explores the sustainable solution of using solar energy light sticks to illuminate nets with the goal of avoiding sea turtle bycatch. The study analyzes the Bycatch Per Unit Effort (BPUE) of sea turtles and the Catch Per Unit Effort (CPUE) for target fish species. The hypothesis is that illuminating fishing nets with solar powered lights will reduce BPUE but not impact CPUE. This paper builds on the findings of other research that has found illumination to be helpful in combating sea turtle bycatch. 
+
+The CPUE and BPUE studies both have illuminated nets (treated) and controlled nets (untreated) in their experiment. This paper uses a Generalized Linear Mixed Model (GLMM) which uses both random and fixed effects. Specifically, they use a Tweedie model which is used when the data distribution includes zero and is continuously positive otherwise. 
+
+In this tutorial readers will see a case study of when to use a GLMM with the Tweedie distribution. Readers will also learn about the assumptions for the GLMM and Tweedie distribution as well as how to conduct model checks that verify that the appropriate model is being utilized. 
+
+### Load libraries
 
 ```{r}
 library(tidyverse)
@@ -114,6 +120,7 @@ ggplot() +
         title = element_text(color = "white"),
         strip.text = element_text(color = "white")) 
 ```
+Bycatch Per Unit Effort (BPUE) has a right-skewed distribution. This distribution means that there a large amount of zeros in the data. 
 
 Our entire BPUE data set follow a tweedie distribution: zero-inflated and positively skewed. This does not tell us much about the validitity of our models, but it is good to know.
 
