@@ -1,16 +1,25 @@
 ---
-title: "exploration"
+title: "Replicating Senko, J. et al. 2025, Harnessing Solar Energy to Reduce Sea Turtle Bycatch "
 format: html
+
 author: Leela Dixit, Sofia Rodas, & Vedika Shirtekar
+date: "03/06/2026"
 warning: false
 message: false
+code-fold: true
 ---
 
-# Replicating Senko, J. et al. 2025
+![Man fishing with illuminated nets](images/fishing_illum.png)
 
-This quarto document replicates the study Senko, J. et al. 2025 studying how illuminating fish nets influences target fish catch and by-catch. This study explores the sustainable solution of using solar energy light sticks to illuminate nets with the goal of avoiding sea turtle by-catch. The original study analyzes the Bycatch Per Unit Effort (BPUE) of sea-turtles and the Catch Per Unit Effort (CPUE) for target fish species. We added an analysis of BPUE for all species to more thoroughly analyze the data.
+# Introduction
 
-Load libraries
+This blog post replicates the study Harnessing Solar Energy to Reduce Sea Turtle Bycatch, Senko, J. et al. 2025, which studies how illuminating fish nets influences target fish catch and bycatch. This study explores the sustainable solution of using solar energy light sticks to illuminate nets with the goal of avoiding sea turtle bycatch. The study analyzes the Bycatch Per Unit Effort (BPUE) of sea turtles and the Catch Per Unit Effort (CPUE) for target fish species. The hypothesis is that illuminating fishing nets with solar powered lights will reduce BPUE but not impact CPUE. This paper builds on the findings of other research that has found illumination to be helpful in combating sea turtle bycatch. 
+
+The CPUE and BPUE studies both have illuminated nets (treated) and controlled nets (untreated) in their experiment. This paper uses a Generalized Linear Mixed Model (GLMM) which uses both random and fixed effects. Specifically, they use a Tweedie model which is used when the data distribution includes zero and is continuously positive otherwise. 
+
+In this tutorial readers will see a case study of when to use a GLMM with the Tweedie distribution. Readers will also learn about the assumptions for the GLMM and Tweedie distribution as well as how to conduct model checks that verify that the appropriate model is being utilized. 
+
+### Load libraries
 
 ```{r}
 library(tidyverse)
@@ -18,6 +27,7 @@ library(mgcv)
 library(stats)
 library(here)
 library(DHARMa)
+library(kableExtra)
 ```
 
 Load data
@@ -92,24 +102,34 @@ bpue <- bpue |>
 ### Initial exploration plot
 
 ```{r}
-ggplot(bpue, aes(x= gillnet_pair, y = bpue, color = animal_type)) + 
-  geom_point() +
-  facet_wrap(~treatment) + 
-  theme_minimal()
-
 ggplot() +
   geom_histogram(data = bpue, 
-                 aes(x = bpue), 
+                 aes(x = bpue,
+                     fill = treatment), 
                  width = 0.2) +
   facet_wrap(~treatment) + 
   theme_minimal() +
-  labs(title = "Distribution BPUE")
-
+  scale_fill_manual(values = c("control" = "#000000",
+                               "illuminated" = "#39f72e")) +
+  labs(title = "Distribution BPUE") +
+  theme(panel.background = element_rect(fill = "#2d2f33"),
+        plot.background = element_rect(fill = "#2d2f33"),
+        panel.grid = element_blank(),
+        axis.text = element_text(color = "white"),
+        axis.title.y = element_text(color = "white"),
+        legend.position = "none",
+        title = element_text(color = "white"),
+        strip.text = element_text(color = "white")) 
 ```
+Bycatch Per Unit Effort (BPUE) has a right-skewed distribution. This distribution means that there a large amount of zeros in the data. 
+
+Our entire BPUE data set follow a tweedie distribution: zero-inflated and positively skewed. This does not tell us much about the validity of our models, but it is good to know.
 
 ## Fit the `gam()` for the bpue
 
 `Tweedie()` explanation. https://stat.ethz.ch/R-manual/R-devel/library/mgcv/html/Tweedie.html
+
+Tweedie distributions are a family of probability distributions, often used as distributions for generalized linear models like we are using here. They are categorized as high number of zero observations with a positively skewed distribution, like we saw above.
 
 ```{r}
 bpue_glm <- gam(bpue ~ treatment + s(gillnet_pair, bs = 're'),
@@ -135,18 +155,22 @@ turtle_bpue <- turtle_bpue |>
 ```{r}
 turtle_bpue |> 
   filter(animal_type == "loggerhead_number_bpue") |> 
-ggplot(aes(x= gillnet_pair, y = bpue, color = animal_type)) + 
-  geom_point() +
-  facet_wrap(~treatment) + 
-  theme_minimal()
-
-turtle_bpue |> 
-  filter(animal_type == "loggerhead_number_bpue") |> 
-ggplot(aes(x = bpue)) +
+ggplot(aes(x = bpue,
+           fill = treatment)) +
   geom_bar(width = 0.2) +
   facet_wrap(~treatment) + 
+    scale_fill_manual(values = c("control" = "#000000",
+                               "illuminated" = "#39f72e")) +
   theme_minimal() +
-  labs(title = "Distribution of Loggerhead BPUE Counts")
+  labs(title = "Distribution of Loggerhead BPUE Counts") +
+theme(panel.background = element_rect(fill = "#2d2f33"),
+        plot.background = element_rect(fill = "#2d2f33"),
+        panel.grid = element_blank(),
+        axis.text = element_text(color = "white"),
+        axis.title.y = element_text(color = "white"),
+        legend.position = "none",
+        title = element_text(color = "white"),
+        strip.text = element_text(color = "white")) 
 
 ```
 
@@ -170,18 +194,24 @@ cpue <- cpue |>
 ```
 
 ```{r}
-ggplot(cpue, aes(x= gillnet_pair, y = cpue, color = catch)) + 
-  geom_point() +
-  facet_wrap(~treatment) + 
-  theme_minimal()
-
 ggplot() +
   geom_histogram(data = cpue, 
-                 aes(x = cpue), 
+                 aes(x = cpue,
+                     fill = treatment), 
                  width = 0.2) +
   facet_wrap(~treatment) + 
+    scale_fill_manual(values = c("control" = "#000000",
+                               "illuminated" = "#39f72e")) +
   theme_minimal() +
-  labs(title = "Distribution CPUE")
+  labs(title = "Distribution CPUE") +
+theme(panel.background = element_rect(fill = "#2d2f33"),
+        plot.background = element_rect(fill = "#2d2f33"),
+        panel.grid = element_blank(),
+        axis.text = element_text(color = "white"),
+        axis.title.y = element_text(color = "white"),
+        legend.position = "none",
+        title = element_text(color = "white"),
+        strip.text = element_text(color = "white")) 
 ```
 
 ## Fit the `gam()` for the cpue
@@ -193,6 +223,8 @@ cpue_glm <- gam(cpue ~ treatment + s(gillnet_pair, bs = 're'),
 ```
 
 ## Calculate predictions for mean and standard errors
+
+Now that we have our GLMM model run based on our experimental data, we can generate predictions that we can plot to visualize what we expect/predict our outcome to look like based on our treatments. We will generate predictions for the mean and standard errors of sea turtle bycatch and target fish catch that we can plot over our real data.
 
 ```{r}
 # generate predictions for bpue data
@@ -233,7 +265,11 @@ bpue_prediction %>%
   labs(x = "",
        y = "Predicted mean sea turtle BPUE\n(no. turtles per 100m net x 12h",
        title = "Predicted Sea Turtle Bycatch Decreases with Illuminated Nets")
+```
 
+We can see that illuminted nets had a very small amount of sea turtle bycatch when compared to non-illuminated nets. The predicted standard errors are not too large, indicating our model was likely appropriate for our data but we will double check further down!
+
+```{r}
 cpue_prediction %>%
   group_by(treatment) %>% 
   summarise(mean_fit = mean(fit),
@@ -256,6 +292,8 @@ cpue_prediction %>%
        y = "Predicted mean target fish CPUE\n(kg fish per 100m net x 12h",
        title = "Predicted target fish CPUE increases with illuminated nets")
 ```
+
+Conversely, we can see illuminated nets had a larger target fish catch than non-illuminated nets, but not by much. Predicted standard errors were not too large in this plot either, indicating good fit, however the difference between control and treatment was small and likely this difference will not be significant.
 
 # Parametric and Assumption Checks
 ## check model: overdisperion, zero-inflation
@@ -389,77 +427,35 @@ Here, the log-transformed sea turtle BPUE and total fish catch (CPUE) outcomes w
 
 ```
 
-Among non-zero observations, the control group shows consistently higher log(BPUE) values than the illuminated group. This helps support the assumption that illumination reduces bycatch proportionally rather than by a fixed amount.
+Among non-zero observations, the control group shows consistenly higher log(BPUE) values than the illuminated group. This helps support the assumption that the illumination reduces bycatch proportionally rather than by a fixed amount.
 
 # Confidence Intervals
 
 ### Turtle by-catch confidence intervals
 
-The simplest way to get confidence intervals for the data is to use the `predict()` function with the argument `se.fit = TRUE`. This is completed below, however, Senko, J. et al. 2025 state they utilize a bootstrap analysis with 10,000 simulations. This is completed below.
+Senko, J. et al. 2025 state they utilize a bootstrap analysis with 10,000 simulations to calculate confidence intervals. Bootstrapping creates confidence intervals by creating simulations through resampling the data with replacement to analyze an estimate of the true populations' data distribution. To complete bootstrapping six steps are taken:
 
-```{r}
-# calculate standard error 
-turtle_se <- predict(object = turtle_bpue_glm, 
-                     newdata = turtle_prediction, 
-                     type = 'link', 
-                      se.fit = TRUE)
+1.  Create predictions for the outcome based on the sample data.
 
-# inverse link function 
-linkinv <- family(turtle_bpue_glm)$linkinv
+2.  Sample from the predictions with replacement. This is repeated a defined number of times. To maintain consistency with the predictions, sampling with replacement is completed the based on the number of predicted observations.
 
+3.  Run a GLMM Tweedie distribution analysis on the boot sample.
 
-bpue_prediction <- bpue_prediction %>% 
-  mutate(
-    # P in link space 
-    link_p = turtle_se$fit, 
-    
-    # CI in link space 
-    link_p_se = turtle_se$se.fit,
-    link_p_lwr = qnorm(0.025, mean = bpue, sd = link_p_se),
-    link_p_upr = qnorm(0.975, mean = bpue, sd = link_p_se),
-    
-    # CI in response space 
-    prediction_se = linkinv(link_p),
-    ci_lower = linkinv(link_p_lwr),
-    ci_upper = linkinv(link_p_upr)
-  )
-```
+4.  Save the prediction values
 
-### Fish catch confidence intervals
+5.  Repeat the bootstrapping practice to gat a better estimate. In this case the bootstrap was run 10,000 times.
 
-```{r}
-# calculate standard error 
-cpue_se <- predict(object = cpue_glm, 
-                  newdata = cpue_prediction, 
-                    type = 'link', 
-                      se.fit = TRUE)
+6.  Calculate the desired statistic from these bootstrapped estimates of the outcome. In this case, confidence intervals are calculated.
 
-# inverse link function 
-linkinv <- family(turtle_bpue_glm)$linkinv
+The above steps are completed for each set of data for which the confidence intervals need to be calculated. These steps were run for the turtle by-catch data and the catch per unit effort data.
 
+# Bootstrap 10,000 simulations
 
-cpue_prediction <- cpue_prediction %>% 
-  mutate(
-    # P in link space 
-    link_p = cpue_se$fit, 
-    
-    # CI in link space 
-    link_p_se = cpue_se$se.fit,
-    link_p_lwr = qnorm(0.025, mean = cpue, sd = link_p_se),
-    link_p_upr = qnorm(0.975, mean = cpue, sd = link_p_se),
-    
-    # CI in response space 
-    prediction_se = linkinv(link_p),
-    ci_lower = linkinv(link_p_lwr),
-    ci_upper = linkinv(link_p_upr)
-  )
-```
+Note: Each bootstrap runs with a warning since not all of the levels of `gillnet_pair`, which is classified as a factor, are included in each iteration of the bootstraps and therefore predictions for that factor cannot be calculated. After much research this does not affect the effectiveness of the bootstrap. These warning are suppressed.
 
-\# Bootstrap 10,000 simulations
+### Run bootstrap for turtle by-catch
 
-Note: Each bootstrap runs with a warning since not all of the levels of gillnet_pair factors are included in each iteration of the bootstraps and therefore predictions for that factor cannot be calculated. After much research this does not affect the effectiveness of the bootstrap. These warning are suppressed.
-
-\### Run bootstrap for turtle by-catch Create predictions for only turtle by-catch for bootstrapping.
+Create predictions for only turtle by-catch.
 
 ```{r}
 # generate predictions for bpue data
@@ -488,7 +484,7 @@ boot <-  map_dfr(1:10000, \(i) {
                        family = tw(link = "log"),
                        data = boot_sample)
 
-    # predict the boots values (the outcomes are best fit lines)
+  # predict the boots values
   mutate(turtle_prediction, 
          turtle_pred = predict(boot_mod, 
                  newdata = turtle_prediction, 
@@ -506,7 +502,7 @@ turtle_boot_ci <- boot |>
             .by = c(animal_type, gillnet_pair, treatment))
 ```
 
-\### Run bootstrap for CPUE
+### Run bootstrap for CPUE
 
 ```{r}
 #| warning: false
@@ -522,7 +518,7 @@ boot <-  map_dfr(1:10000, \(i) {
                      family = tw(link = "log"),
                      data = boot_sample)
 
-    # predict the boots values (the outcomes are best fit lines)
+    # predict the boots values 
   mutate(cpue_prediction, 
          cpue_pred = predict(boot_mod, 
                  newdata = cpue_prediction, 
@@ -534,15 +530,99 @@ boot <-  map_dfr(1:10000, \(i) {
 Create confidence intervals utilizing the bootstrapped data.
 
 ```{r}
-boot_ci_cpue <- boot |>
+cpue_boot_ci <- boot |>
   summarise(cpue_lwr = quantile(cpue_pred, 0.025),
             cpue_upr = quantile(cpue_pred, 0.975),
             .by = c(catch, gillnet_pair, treatment))
 ```
 
+```{r}
+#| echo: false
+
+# lower boot CI
+turtle_boot_ci <- turtle_boot_ci |> 
+  group_by(treatment) |> 
+  mutate(lwr_avg = mean(bpue_lwr, na.rm = TRUE))
+
+# upper boot CI
+turtle_boot_ci <- turtle_boot_ci |> 
+  group_by(treatment) |> 
+  mutate(upr_avg = mean(bpue_upr, na.rm = TRUE))
+
+ill_turtle <- turtle_boot_ci |> 
+  filter(treatment == "illuminated") |> 
+  head(n = 1)
+
+cont_turtle <- turtle_boot_ci |> 
+  filter(treatment == "control") |> 
+  head(n = 1)
+
+CI_df <- tibble(
+  Treatment = c("Illuminated", "Control"),
+  LowerCI = c(ill_turtle$lwr_avg, cont_turtle$lwr_avg),
+  UpperCI = c(ill_turtle$upr_avg, cont_turtle$upr_avg)
+)
+
+turtle_CI <- CI_df |> 
+  kable() |> 
+  kable_styling()
+
+turtle_CI |> 
+  add_header_above(c("Turtle BPUE Confidence Intervals" = 3))
+
+```
+
+```{r}
+#| echo: false
+
+# lower boot CI
+cpue_boot_ci <- cpue_boot_ci |> 
+  group_by(treatment) |> 
+  mutate(lwr_avg = mean(cpue_lwr, na.rm = TRUE))
+
+# upper boot CI
+cpue_boot_ci <- cpue_boot_ci |> 
+  group_by(treatment) |> 
+  mutate(upr_avg = mean(cpue_upr, na.rm = TRUE))
+
+ill_cpue <- cpue_boot_ci |> 
+  filter(treatment == "illuminated") |> 
+  head(n = 1)
+
+cont_cpue <- cpue_boot_ci |> 
+  filter(treatment == "control") |> 
+  head(n = 1)
+
+CI_df <- tibble(
+  Treatment = c("Illuminated", "Control"),
+  LowerCI = c(ill_cpue$lwr_avg, cont_cpue$lwr_avg),
+  UpperCI = c(ill_cpue$upr_avg, cont_cpue$upr_avg)
+)
+
+cpue_CI <- CI_df |> 
+  kable() |> 
+  kable_styling()
+
+cpue_CI |> 
+  add_header_above(c("CPUE Confidence Intervals" = 3))
+
+```
+
+These confidence intervals shows where we think the true population mean falls based on our predictions. The confidence interval for the mean turtle BPUE is significantly smaller in the illuminated gillnet pairs than the confidence interval for the mean turtle BPUE in the control gillnet pairs. However, both confidence intervals are quite large, meaning our model is being more conservative with estimates because it is unable to confidently predict a smaller range where our true mean would fall.
+
+The confidence intervals for the mean CPUE are approximately the same between both the illuminated and control groups, which indicates the difference between illuminated nets and non-illuminated nets for target fish catch is likely not significant. This shows that illumination has a greater effect on the mean of turtle BPUE. 
+
 # Conclusions
 
 -   Causal identification credible?
+
+    -   Some evidence for a credible causal identification (see assumptions below), but also some issues:
+
+        -   bycatch and target fish experiments done during different seasons
+
+        -   between-sample conditions were not kept the same
+
+        -   target fish experiment had a much smaller sample size compared to sea turtle bycatch sample size
 
 -   assumptions what are they, did they have them?
 
@@ -563,4 +643,10 @@ boot_ci_cpue <- boot |>
     -   28 net pairs for sea turtle bycatch, and 14 net pairs for target fish experiments.
     -   gillnet pairs were identical and similar material to what is already used, and deployed during times fishing would naturally occur.
 
--   other limitations?
+-   other limitations
+
+    -   The authors were looking only at blinking lights as illumination and comparing to previous studies looking only at solid light illumination.
+
+# References
+
+-   Senko, J. F., J. Wang, K. M. Burgher, et al. 2025. “Harnessing SolarEnergy to Reduce Sea Turtle Bycatch.” Conservation Letters 18, no. 5:e13151.
