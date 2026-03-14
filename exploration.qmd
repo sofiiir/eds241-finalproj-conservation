@@ -258,10 +258,11 @@ cpue_prediction %>%
 ```
 
 # Parametric and Assumption Checks
+## check model: overdisperion, zero-inflation
 
 ## Distribution Determination Using AIC
 
-AIC (Akaike Information Criterion) was used to compare model fit across different distributions while accounting for model complexity. Lower AIC values indicate a better balance between goodness of fit and simplicity. The Tweedie distribution had the lowest AIC for both models, indicating it provided the best fit to the data.
+AIC (Akaike Information Criterion) was used to compare model fit across different distributions while accounting for model complexity. Lower AIC values indicate a better balance between goodness of fit and simplicity. The Tweedie distribution had the lowest AIC for both models compared to a Gaussian distribution, indicating it provided the best fit to the data.
 
 ```{r}
 ## AIC comparison 
@@ -273,6 +274,15 @@ bpue_gaussian <- gam(bpue ~ treatment + s(gillnet_pair, bs = 're'),
 # Tweedie is best fit with parsimony
 AIC(turtle_bpue_glm, bpue_gaussian)
 ```
+```{r}
+#| code-fold: true
+# Tweedie is best fit with parsimony
+library(kableExtra)
+print(paste("Turtle BPUE GLMM Distribution Comparison:"))
+AIC(turtle_bpue_glm, bpue_gaussian)
+```
+
+
 
 ```{r}
 ## AIC comparison 
@@ -324,55 +334,59 @@ data.frame(
 ## Log Link Assumption Check
 
 Here, the log-transformed sea turtle BPUE and total fish catch (CPUE) outcomes were plotted against treatment to verify the multiplicative (non-fixed) treatment effect assumed by the log link.
+- Test with different distribution fit? 
+- Check glmms
+- 
 
 ```{r}
 #| warning: false
 # Turtle BPUE: Predictor vs log(outcome)
-turtle_bpue <- turtle_bpue %>% 
-  mutate(log_bpue = log(bpue))
-
-# Plot
-turtle_bpue %>% ggplot(aes(x = treatment, y = log_bpue, 
-                           color = treatment)) +
-  geom_jitter(width = .2, alpha = .6) +
-  geom_boxplot(aes(fill = treatment), alpha = .3) +
-  scale_color_manual(values = c("control" = "#000000", "illuminated" = "#39f72e")) + 
-  scale_fill_manual(values = c("control" = "#000000", "illuminated" = "#39f72e")) +
-  theme_minimal() +  
-  labs(x = "Treatment", y = "log(Sea Turtle BPUE)", title = "Treatment vs log(BPUE)")+ 
-  guides(fill = "none") +
-  theme(panel.background = element_rect(fill = "#2d2f33"),
-        plot.background = element_rect(fill = "#2d2f33"),
-        panel.grid = element_blank(),
-        axis.text = element_text(color = "white"),
-        axis.title.y = element_text(color = "white"),
-        legend.position = "none",
-        title = element_text(color = "white")) 
+# turtle_bpue <- turtle_bpue %>% 
+#   mutate(log_bpue = log(bpue))
+# 
+# # Plot
+# turtle_bpue %>% ggplot(aes(x = treatment, y = log_bpue, 
+#                            color = treatment)) +
+#   geom_jitter(width = .2, alpha = .6) +
+#   geom_boxplot(aes(fill = treatment), alpha = .3) +
+#   scale_color_manual(values = c("control" = "#000000", "illuminated" = "#39f72e")) + 
+#   scale_fill_manual(values = c("control" = "#000000", "illuminated" = "#39f72e")) +
+#   theme_minimal() +  
+#   labs(x = "Treatment", y = "log(Sea Turtle BPUE)", title = "Treatment vs log(BPUE)")+ 
+#   guides(fill = "none") +
+#   theme(panel.background = element_rect(fill = "#2d2f33"),
+#         plot.background = element_rect(fill = "#2d2f33"),
+#         panel.grid = element_blank(),
+#         axis.text = element_text(color = "white"),
+#         axis.title.y = element_text(color = "white"),
+#         legend.position = "none",
+#         title = element_text(color = "white")) 
 ```
 
 ```{r}
-#| warning: false
-# Total Fish Catch CPUE: Predictor vs log(outcome)
-cpue <- cpue %>% 
-  mutate(log_cpue = log(cpue))
+# #| warning: false
+# # Total Fish Catch CPUE: Predictor vs log(outcome)
+# cpue <- cpue %>% 
+#   mutate(log_cpue = log(cpue))
+# 
+# # Plot
+# cpue %>% ggplot(aes(x = treatment, y = log_cpue, 
+#                            color = treatment)) +
+#   geom_jitter(width = .2, alpha = .6) +
+#   geom_boxplot(aes(fill = treatment), alpha = .3) +
+#   scale_color_manual(values = c("control" = "#000000", "illuminated" = "#39f72e")) + 
+#   scale_fill_manual(values = c("control" = "#000000", "illuminated" = "#39f72e")) +
+#   theme_minimal() +  
+#   labs(x = "Treatment", y = "log(CPUE)", title = "Treatment vs log(CPUE)")+ 
+#   guides(fill = "none") +
+#   theme(panel.background = element_rect(fill = "#2d2f33"),
+#         plot.background = element_rect(fill = "#2d2f33"),
+#         panel.grid = element_blank(),
+#         axis.text = element_text(color = "white"),
+#         axis.title.y = element_text(color = "white"),
+#         legend.position = "none",
+#         title = element_text(color = "white")) 
 
-# Plot
-cpue %>% ggplot(aes(x = treatment, y = log_cpue, 
-                           color = treatment)) +
-  geom_jitter(width = .2, alpha = .6) +
-  geom_boxplot(aes(fill = treatment), alpha = .3) +
-  scale_color_manual(values = c("control" = "#000000", "illuminated" = "#39f72e")) + 
-  scale_fill_manual(values = c("control" = "#000000", "illuminated" = "#39f72e")) +
-  theme_minimal() +  
-  labs(x = "Treatment", y = "log(CPUE)", title = "Treatment vs log(CPUE)")+ 
-  guides(fill = "none") +
-  theme(panel.background = element_rect(fill = "#2d2f33"),
-        plot.background = element_rect(fill = "#2d2f33"),
-        panel.grid = element_blank(),
-        axis.text = element_text(color = "white"),
-        axis.title.y = element_text(color = "white"),
-        legend.position = "none",
-        title = element_text(color = "white")) 
 ```
 
 Among non-zero observations, the control group shows consistently higher log(BPUE) values than the illuminated group. This helps support the assumption that illumination reduces bycatch proportionally rather than by a fixed amount.
