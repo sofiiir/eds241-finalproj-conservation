@@ -254,7 +254,7 @@ Target fish CPUE has a right skewed distribution and contains a large amount of 
 
 ## Fit the `gam()` for the cpue
 
-In the `gam()` model below CPUE is the outcome, the fixed effect stems from treatment, and gillnet_pair is used as a random effect.
+In the `gam()` model below CPUE is the outcome, the fixed effect stems from treatment, and gillnet_pair is used as a random effect. Random effects are included in this model to handle clustered/hierarchical data and manage unobserved heterogeneity within groups. This also helps to allow for overdispersion.
 
 ```{r}
 cpue_glm <- gam(cpue ~ treatment + # target fish cpue regressed on treatment
