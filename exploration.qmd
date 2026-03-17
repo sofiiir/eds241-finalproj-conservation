@@ -3,7 +3,7 @@ title: "Replicating Senko, J. et al. 2025, Harnessing Solar Energy to Reduce Sea
 format: html
 
 author: Leela Dixit, Sofia Rodas, & Vedika Shirtekar
-date: "03/06/2026"
+date: "03/20/2026"
 warning: false
 message: false
 code-fold: true
@@ -13,11 +13,16 @@ code-fold: true
 
 # Introduction
 
-This blog post replicates the study Harnessing Solar Energy to Reduce Sea Turtle Bycatch, Senko, J. et al. 2025, which studies how illuminating fish nets influences target fish catch and bycatch. This study explores the sustainable solution of using solar energy light sticks to illuminate nets with the goal of avoiding sea turtle bycatch. The study analyzes the Bycatch Per Unit Effort (BPUE) of sea turtles and the Catch Per Unit Effort (CPUE) for target fish species. The hypothesis is that illuminating fishing nets with solar powered lights will reduce BPUE but not impact CPUE. This paper builds on the findings of other research that has found illumination to be helpful in combating sea turtle bycatch.
 
-The CPUE and BPUE studies both have illuminated nets (treated) and controlled nets (untreated) in their experiment. This paper uses a Generalized Linear Mixed Model (GLMM) which uses both random and fixed effects. Specifically, they use a Tweedie model which is used when the data distribution includes zero and is continuously positive otherwise.
+This blog post replicates the study Harnessing Solar Energy to Reduce Sea Turtle Bycatch, Senko, J. et al. 2025, which studies how illuminating fish nets with solar powered lights effects target fish catch and bycatch. This study explores  solar lighting as it is a sustainable solution to illuminating nets which previous research has indicated reduces large animal bycatch. The goal of the illumination of the nets in this study is to determine whether solar lights significantly reduce sea turtle bycatch. The study analyzes the Bycatch Per Unit Effort (BPUE) of sea turtles and the Catch Per Unit Effort (CPUE) for target fish species.
 
-In this tutorial readers will see a case study of when to use a GLMM with the Tweedie distribution. Readers will also learn about the assumptions for the GLMM and Tweedie distribution as well as how to conduct model checks that verify that the appropriate model is being utilized.
+The hypothesis is that illuminating fishing nets with solar powered lights will reduce BPUE but not impact CPUE. This paper builds on the findings of other research that has found illumination to be helpful in combating sea turtle bycatch. 
+
+The CPUE and BPUE studies both have illuminated nets (treated) and controlled nets (untreated) to analyze if catches are different for each animal category. They deployed both sets of nets in CPUE and BPUE analysis in Baja California Sur, Mexico with the help and input of local fisherman. 
+
+This paper uses a Generalized Linear Mixed Model (GLMM) which uses both random and fixed effects. Specifically, they use a Tweedie model which is used when the data distribution includes zero and is continuously positive otherwise. Since the intention of the tutorial is to follow the methods of Senko, J. et al. 2025, all of the methods were replicated as denoted in their paper. The paper does not address assumptions, best fit, or reasons for choosing the specific model. Hence this tutorial attempts to extrapolate their reasoning. 
+
+In this tutorial readers will see a case study of the use of a GLMM with the Tweedie distribution. Readers will also learn about the assumptions for the GLMM and Tweedie distribution as well as how to conduct model checks that verify that the appropriate model is being utilized. 
 
 ### Load libraries
 
@@ -42,19 +47,21 @@ The data for this study, Senko et al 2025, consists of 4 columns and 784 rows.
 
 | Column Header | gillnet_pair | animal_type | exp_unit | bpue |
 |---------------|---------------|---------------|---------------|---------------|
-| Description | A numeric value 1-28 indicating which gillnet pair this sample is from. | Categorical variable describing which animal type this observation is for. | Categorical variable indicating treatment (illuminated) or control. | Numeric value of catch. This number is on the scale of bpue or cpue depending on animal type. |
+| Description | A numeric value 1-28 indicating which gillnet pair this sample is from. | Categorical variable describing which animal type this observation is for. | Categorical variable indicating treatment (illuminated) or control. | Numeric value of catch. This number is on the scale of BPUE or CPUE depending on animal type. |
 
-Our key outcome variable for this study is bpue/cpue, with variations of animal type as a grouping variable (turtle bpue or target fish cpue). Our treatment is exp_unit, indicating if that gillnet bycatch observation was from an illuminated net or not. This study compared 28 gillnet pairs of equal size/material over a time period of July-September 2019 (assessing sea turtle bycatch) and February-March 2020 (assessing target fish catch). These experiments were conducted in Baja California Sur (BCS), Mexico, where bottom-set gillnet results in high bycatch rates and subsequent mortality of sea turtles.
+Our key outcome variable for this study is BPUE/CPUE, with variations of animal type as a grouping variable (turtle BPUE or target fish CPUE). Our treatment is exp_unit, indicating if that gillnet bycatch observation was from an illuminated net or not. This study compared 28 gillnet pairs of equal size/material over a time period of July-September 2019 (assessing sea turtle bycatch) and February-March 2020 (assessing target fish catch). These experiments were conducted in Baja California Sur (BCS), Mexico, where bottom-set gillnet results in high bycatch rates and subsequent mortality of sea turtles.
 
-Each row is an observation of total bpue/cpue for that gillnet pair, treatment or control type, and animal type for the time period of this experiment. We have cleaned column headers/variable names and have pivoted the data from wide to long before reading in data to this script. We did not perform any data cleaning that resulted in loss of data.
+**The data for this study is not available publicly at this time. A similar dataset was located on Jesse Senko's, the first author, [Open Science Framework](https://osf.io/fmxby/files/u2y8e). The data located to recreate the methods of this study has the same data components, however, differences in findings are likely due to the data discrepancies.** 
+
+Each row is an observation of total BPUE/CPUE for that gillnet pair, treatment or control type, and animal type for the time period of this experiment. We have cleaned column headers/variable names and have pivoted the data from wide to long before reading in data to this script. We did not perform any data cleaning that resulted in loss of data. Data cleaning is not included as part of this tutorial, but can be located 
 
 # General Linear Mixed Model (GLMM) with a Tweedie distribution
 
 ## BPUE and CPUE data frame cleaning
 
-The paper runs a separate GLMM for Bycatch Per Unit Effort (BPUE) and Catch Per Unit Effort (CPUE). The BPUE analysis was only completed for sea turtles, not for all by-catch but we'll run both at least for exploration.
+The paper runs separate statistical analysis on Bycatch Per Unit Effort (BPUE) and Catch Per Unit Effort (CPUE). The BPUE analysis was only completed for sea turtles, not for all by-catch but we'll run analysis on both at least for exploration.
 
-Let's make two separate data frames one for each.
+First, let's make two separate data frames one for BPUE and one for CPUE.
 
 BPUE is created by just selecting the appropriate rows.
 
@@ -66,7 +73,7 @@ turtle_bpue <- catch_data %>%
   filter(animal_type == "loggerhead_biomass_bpue" | animal_type == "loggerhead_number_bpue")
 ```
 
-CPUE names are wrong. Filter for the appropriate rows, then pivot to make changing the names easier before pivotting back.
+CPUE names are wrong. Filter for the appropriate rows, then pivot to make changing the names easier before pivotting back for a tidy data frame.
 
 ```{r}
 cpue <- catch_data %>% 
@@ -130,7 +137,16 @@ Our entire BPUE data set follow a tweedie distribution: zero-inflated and positi
 
 `Tweedie()` explanation. https://stat.ethz.ch/R-manual/R-devel/library/mgcv/html/Tweedie.html
 
-Tweedie distributions are a family of probability distributions, often used as distributions for generalized linear models like we are using here. They are categorized as high number of zero observations with a positively skewed distribution, like we saw above.
+Tweedie distributions are a family of probability distributions, often used as distributions for generalized linear models like the one we are using here. They are categorized as high number of zero observations with a positively skewed distribution, like we saw above.
+
+#### What is a `gam()`?
+`gam()` is a generalized additive model. The GAM allows for more model flexibility and non-linear relationships. 
+
+For more information on GAM models as well as an in-depth explanation of when and how to use them this is a great recorded webinar titled the [Introduction to Generalized Additive Models with R and mgcv](https://www.google.com/search?q=gam()+r+from+the+mgcv+package&oq=gam()+r+from+the+mgcv+package&gs_lcrp=EgZjaHJvbWUyBggAEEUYOTIHCAEQIRigATIHCAIQIRigATIHCAMQIRiPAtIBCTExNDkzajBqN6gCALACAA&sourceid=chrome&ie=UTF-8#fpstate=ive&vld=cid:1afdb9fa,vid:sgw4cu8hrZM,st:8.239).
+
+**Since the purpose of this tutorial is to analyze the methodologies conducted by Senko, J. et al. 2025, a `gam()` is used as the model to analyze statistical differences between treatment groups since this is the methodology employed in the paper.**
+
+In the `gam()` model below BPUE is the outcome, the fixed effect stems from treatment, and gillnet_pair is used as a random effect. 
 
 ```{r}
 bpue_glm <- gam(bpue ~ treatment + s(gillnet_pair, bs = 're'),
@@ -139,6 +155,7 @@ bpue_glm <- gam(bpue ~ treatment + s(gillnet_pair, bs = 're'),
 
 summary(bpue_glm)
 ```
+
 
 # `GLMM` on the turtle BPUE data
 
@@ -174,8 +191,11 @@ theme(panel.background = element_rect(fill = "#2d2f33"),
         strip.text = element_text(color = "white")) 
 
 ```
+BPUE for loggerhead turtles also has a right skewed distribution and contains a large amount of zeros. This distribution is positively skewed and does not contain any negatives. 
 
 ## Fit the `gam()` for the turtle bpue
+
+In the `gam()` model below turtle BPUE is the outcome, the fixed effect stems from treatment, and gillnet_pair is used as a random effect. 
 
 ```{r}
 turtle_bpue_glm <- gam(bpue ~ treatment + s(gillnet_pair, bs = 're'),
@@ -217,6 +237,7 @@ theme(panel.background = element_rect(fill = "#2d2f33"),
 
 ## Fit the `gam()` for the cpue
 
+In the `gam()` model below CPUE is the outcome, the fixed effect stems from treatment, and gillnet_pair is used as a random effect. 
 ```{r}
 cpue_glm <- gam(cpue ~ treatment + s(gillnet_pair, bs = 're'),
                 family = tw(link = log),
@@ -297,6 +318,16 @@ cpue_prediction %>%
 Conversely, we can see illuminated nets had a larger target fish catch than non-illuminated nets, but not by much. Predicted standard errors were not too large in this plot either, indicating good fit, however the difference between control and treatment was small and likely this difference will not be significant.
 
 # Parametric and Assumption Checks
+
+
+```{r}
+gam.check(turtle_bpue_glm)
+```
+
+```{r}
+gam.check(cpue_glm)
+```
+
 
 ## Distribution Determination Using AIC
 
