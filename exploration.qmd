@@ -1,19 +1,20 @@
 ---
 title: "Replicating Senko, J. et al. 2025, Harnessing Solar Energy to Reduce Sea Turtle Bycatch "
 format: html
-
 author: Leela Dixit, Sofia Rodas, & Vedika Shirtekar
 date: "03/20/2026"
 warning: false
 message: false
 code-fold: true
+editor_options: 
+  chunk_output_type: console
 ---
 
 ![Man fishing with illuminated nets](images/fishing_illum.png)
 
 # Introduction
 
-This blog post replicates the study Harnessing Solar Energy to Reduce Sea Turtle Bycatch, Senko, J. et al. 2025, which studies how illuminating fish nets with solar powered lights effects target fish catch and bycatch. This study explores  solar lighting as it is a sustainable solution to illuminating nets which previous research has indicated reduces large animal bycatch. The goal of the illumination of the nets in this study is to determine whether solar lights significantly reduce sea turtle bycatch. The study analyzes the Bycatch Per Unit Effort (BPUE) of sea turtles and the Catch Per Unit Effort (CPUE) for target fish species.
+This blog post replicates the study Harnessing Solar Energy to Reduce Sea Turtle Bycatch, Senko, J. et al. 2025, which studies how illuminating fish nets with solar powered lights effects target fish catch and bycatch. This study explores solar lighting as it is a sustainable solution to illuminating nets which previous research has indicated reduces large animal bycatch. The goal of the illumination of the nets in this study is to determine whether solar lights significantly reduce sea turtle bycatch. The study analyzes the Bycatch Per Unit Effort (BPUE) of sea turtles and the Catch Per Unit Effort (CPUE) for target fish species.
 
 The hypothesis is that illuminating fishing nets with solar powered lights will reduce BPUE but not impact CPUE. This paper builds on the findings of other research that has found illumination to be helpful in combating sea turtle bycatch.
 
@@ -343,30 +344,34 @@ Conversely, we can see illuminated nets had a larger target fish catch than non-
 
 # Parametric and Assumption Checks
 
+The authors mention residual checks as an assumption check, so we will replicate below along with other assumption checks.
+
 ```{r}
 # check assumptions on sea turtle GLMM
 gam.check(turtle_bpue_glm)
 ```
 
 ```{r}
-# check
+# check assumptions for target fish GLMM
 gam.check(cpue_glm)
 ```
 
 ## Distribution Determination Using AIC
 
-AIC (Akaike Information Criterion) was used to compare model fit across distributions while accounting for model complexity, with lower AIC values indicating a better balance between goodness of fit and parsimony. A Gamma distribution was chosen as the comparison because like the Tweedi distribution, it handles right-skewed positive data within the same GLM framework. However, the Gamma is undefined at zero, so a slight adjustment of .001 was added before fitting. The Tweedie produced the lowest AIC for both the BPUE and CPUE models, confirming it as the better-fitting distribution. The Tweedie distribution had the lowest AIC for both models compared to a Gaussian distribution, indicating it provided the best fit to the data.
+AIC (Akaike Information Criterion) was used to compare model fit across distributions while accounting for model complexity, with lower AIC values indicating a better balance between goodness of fit and parsimony. A Gamma distribution was chosen as the comparison because like the Tweedie distribution, it handles right-skewed positive data within the same GLM framework. However, the Gamma is undefined at zero, so a slight adjustment of .001 was added before fitting.
 
 ```{r}
 ## AIC comparison 
 # Looking for lowest score to determine best distribution
-bpue_gamma <- gam(bpue + .001 ~ treatment + s(gillnet_pair, bs = 're'),
+bpue_gamma <- gam(bpue + .001 ~ # 0.001 because data need to be positive, continuous
+                    treatment + s(gillnet_pair, bs = 're'),
                   family = Gamma(link = "log"),
                   data = bpue)
 
 ## AIC comparison 
 # Looking for lowest score to determine best distribution
-cpue_gamma <- gam(cpue + .001 ~ treatment + s(gillnet_pair, bs = 're'), 
+cpue_gamma <- gam(cpue + .001 ~ # 0.001 because data need to be positive, continuous
+                    treatment + s(gillnet_pair, bs = 're'), 
                      family = Gamma(link = "log"),
                      data = cpue)
 ```
@@ -394,6 +399,8 @@ cpue_aic <- AIC(cpue_glm, cpue_gamma) %>%
 bpue_aic
 cpue_aic
 ```
+
+The Tweedie produced the lowest AIC for both the BPUE and CPUE models, confirming it as the better-fitting distribution. The Tweedie distribution had the lowest AIC for both models compared to a Gamma distribution, indicating it provided the best fit to the data.
 
 ## Residual Plots
 
@@ -433,7 +440,7 @@ data.frame(
          title = "Residuals vs Fitted of CPUE GLMM")
 ```
 
-The CPUE residuals vs. fitted plot shows a stronger systematic pattern than the BPUE plot, with a noticeable downward curve at low fitted values. While some asymmetry is expected in a Tweedie model due to zero-inflated data, this clear trend suggests the CPUE model fits the data less well than the BPUE model. This weaker fit may be partly due to the smaller CPUE sample size (n = 21 net pairs vs.n = 28 for BPUE) which limits the model’s ability to capture the underlying structure of the data. As such, the directional pattern in the residuals indicates that the Tweedie GLMM does not fully absorb zero inflation in the CPUE data resulting in a poorer fit compared to the BPUE model.
+The CPUE residuals vs. fitted plot shows a stronger systematic pattern than the BPUE plot, with a noticeable downward curve at low fitted values. While some asymmetry is expected in a Tweedie model due to zero-inflated data, this clear trend suggests the CPUE model fits the data less well than the BPUE model. As such, the directional pattern in the residuals indicates that the Tweedie GLMM does not fully absorb zero inflation in the CPUE data resulting in a poorer fit compared to the BPUE model.
 
 ## Confirming Overdispersion
 
@@ -521,7 +528,7 @@ Bootstrap the turtle by-catch data.
 ```{r}
 #| warning: false
 
-# reiterate through the boot 1000 times
+# reiterate through the boot 10000 times
 boot <-  map_dfr(1:10000, \(i) {
 
   # sample with replacement
@@ -555,7 +562,7 @@ turtle_boot_ci <- boot %>%
 ```{r}
 #| warning: false
 
-# reiterate through the boot 1000 times
+# reiterate through the boot 10000 times
 boot <-  map_dfr(1:10000, \(i) {
 
   # sample with replacement
@@ -597,20 +604,24 @@ turtle_boot_ci <- turtle_boot_ci %>%
   group_by(treatment) %>% 
   mutate(upr_avg = mean(bpue_upr, na.rm = TRUE))
 
+# filter for illuminated net sea turtle CI
 ill_turtle <- turtle_boot_ci %>% 
   filter(treatment == "illuminated") %>% 
   head(n = 1)
 
+# filter for control net sea turtle CI
 cont_turtle <- turtle_boot_ci %>% 
   filter(treatment == "control") %>% 
   head(n = 1)
 
+# make data frame of upper and lower CI
 CI_df <- tibble(
   Treatment = c("Illuminated", "Control"),
   LowerCI = c(ill_turtle$lwr_avg, cont_turtle$lwr_avg),
   UpperCI = c(ill_turtle$upr_avg, cont_turtle$upr_avg)
 )
 
+# style data frame with kable()
 turtle_CI <- CI_df %>% 
   kable() %>% 
   kable_styling()
@@ -633,20 +644,24 @@ cpue_boot_ci <- cpue_boot_ci %>%
   group_by(treatment) %>% 
   mutate(upr_avg = mean(cpue_upr, na.rm = TRUE))
 
+# filter for illuminated net target fish CI
 ill_cpue <- cpue_boot_ci %>% 
   filter(treatment == "illuminated") %>% 
   head(n = 1)
 
+# filter for control net target fish CI
 cont_cpue <- cpue_boot_ci %>% 
   filter(treatment == "control") %>% 
   head(n = 1)
 
+# make data frame of upper and lower CI
 CI_df <- tibble(
   Treatment = c("Illuminated", "Control"),
   LowerCI = c(ill_cpue$lwr_avg, cont_cpue$lwr_avg),
   UpperCI = c(ill_cpue$upr_avg, cont_cpue$upr_avg)
 )
 
+# style data frame with kable()
 cpue_CI <- CI_df %>% 
   kable() %>% 
   kable_styling()
@@ -662,38 +677,15 @@ The confidence intervals for the mean CPUE are approximately the same between bo
 
 # Conclusions
 
--   Causal identification credible?
+Was this causal identification credible? We will argue that its not! 
 
-    -   Some evidence for a credible causal identification (see assumptions below), but also some issues:
+Both experiments (sea turtle bycatch and target fish) were done during different seasons, nets deployed at different locations and depths, different sampling frequency overnight, and run for different lengths of time the nets were in the water. This makes between-sample comparisons inaccurate. We cannot compare sea turtle bycatch in illuminated nets to target fish catch in illuminated nets. Additionally, target fish had a much smaller sample size compared to sea turtle bycatch, making comparisons difficult. Nets were placed at many sites in one location and rotated between depths, but it is unclear how far apart each site was from another, opening up the possibility for spillover between sites.
 
-        -   bycatch and target fish experiments done during different seasons
+Was a GLMM Tweedie the right choice? Yes and no! For the sea turtle experiment, data followed a tweedie distribution (positively skewed, many zeros, non-negative, and non-independent), residuals do not follow a normal distribution but the relationship between response residuals and fitted value residuals looks appropriate for a GLMM. For the target fish experiment, however, data followed a tweedie distribution, and residuals follow a normal distribution, BUT relationship between response residuals and fitted value residuals indicated a GLMM Tweedie was likely not the best statistical analysis choice.
 
-        -   between-sample conditions were not kept the same
+Due to the difference in sample size (target fish N = 21, sea turtle bycatch N = 67), results cannot be generalized and interspecific comparisons would be difficult to make. Experiments were done in one location, and we do not know how results would differ in different locations. Measurements were fairly consistent between gillnet pairs: gillnets were manufactured identically and with similar material to what is typically used in the area, and were deployed during normally occuring fishing hours for the same amount of time. However, sampling effort was different, with sea turtle bycatch being measured every hour but target fish catch were not measured every hour. 
 
-        -   target fish experiment had a much smaller sample size compared to sea turtle bycatch sample size
-
--   assumptions what are they, did they have them?
-
-    -   Response variables followed Tweedie exponential dispersion model (variance is proportional to power of the mean `p`)
-    -   Data are non-negative, continuous (skewed right)
-    -   The relationship between predictor and log-transformed mean is linear
-    -   quantile residuals follow a normal distribution
-    -   power law: spread of residuals gets larger as the mean gets larger
-
--   sampling validity who is in the sample, can results be generalized?
-
-    -   very small sample size of target fish (n = 21) vs sea turtle bycatch (n = 67)
-    -   only one sampling location
-
--   measurement are outcome/treatment variables measured accurately without bias?
-
-    -   Sampling for sea turtle bycatch was checked every hour, but target fish experiment was not. All deployed for the same amount of time though (overnight 11-12 hours).
-    -   28 net pairs for sea turtle bycatch, and 14 net pairs for target fish experiments.
-    -   gillnet pairs were identical and similar material to what is already used, and deployed during times fishing would naturally occur.
-
--   other limitations
-
-    -   The authors were looking only at blinking lights as illumination and comparing to previous studies looking only at solid light illumination.
+The authors found a 63% reduction in sea turtle bycatch with illuminated nets, however we found only a 34% reduction in sea turtle bycatch with illuminated nets. This could be due to differences in data. Despite using different data, we still see a reduction in bycatch indicating that illuminated nets could be a good conservation solution with low effort required by fishermen.
 
 # References
 
