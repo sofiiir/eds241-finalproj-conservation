@@ -42,7 +42,11 @@ catch_data <- read_csv(here("data", "fishnet_illumination_bpue.csv"))
 The data for this study, Senko et al 2025, consists of 4 columns and 784 rows.
 
 | Column Header | gillnet_pair | animal_type | exp_unit | bpue |
+<<<<<<< HEAD
 |----|----|----|----|----|
+=======
+|---------------|---------------|---------------|---------------|---------------|
+>>>>>>> main
 | Description | A numeric value 1-28 indicating which gillnet pair this sample is from. | Categorical variable describing which animal type this observation is for. | Categorical variable indicating treatment (illuminated) or control. | Numeric value of catch. This number is on the scale of BPUE or CPUE depending on animal type. |
 
 Our key outcome variable for this study is BPUE/CPUE, with variations of animal type as a grouping variable (turtle BPUE or target fish CPUE). Our treatment is exp_unit, indicating if that gillnet bycatch observation was from an illuminated net or not. This study compared 28 gillnet pairs of equal size/material over a time period of July-September 2019 (assessing sea turtle bycatch) and February-March 2020 (assessing target fish catch). These experiments were conducted in Baja California Sur (BCS), Mexico, where bottom-set gillnet results in high bycatch rates and subsequent mortality of sea turtles.
@@ -677,13 +681,21 @@ The confidence intervals for the mean CPUE are approximately the same between bo
 
 # Conclusions
 
+<<<<<<< HEAD
 Was this causal identification credible? We will argue that its not!
+=======
+Was this causal identification credible? We will argue that its not! 
+>>>>>>> main
 
 Both experiments (sea turtle bycatch and target fish) were done during different seasons, nets deployed at different locations and depths, different sampling frequency overnight, and run for different lengths of time the nets were in the water. This makes between-sample comparisons inaccurate. We cannot compare sea turtle bycatch in illuminated nets to target fish catch in illuminated nets. Additionally, target fish had a much smaller sample size compared to sea turtle bycatch, making comparisons difficult. Nets were placed at many sites in one location and rotated between depths, but it is unclear how far apart each site was from another, opening up the possibility for spillover between sites.
 
 Was a GLMM Tweedie the right choice? Yes and no! For the sea turtle experiment, data followed a tweedie distribution (positively skewed, many zeros, non-negative, and non-independent), residuals do not follow a normal distribution but the relationship between response residuals and fitted value residuals looks appropriate for a GLMM. For the target fish experiment, however, data followed a tweedie distribution, and residuals follow a normal distribution, BUT relationship between response residuals and fitted value residuals indicated a GLMM Tweedie was likely not the best statistical analysis choice.
 
+<<<<<<< HEAD
 Due to the difference in sample size (target fish N = 21, sea turtle bycatch N = 67), results cannot be generalized and interspecific comparisons would be difficult to make. Experiments were done in one location, and we do not know how results would differ in different locations. Measurements were fairly consistent between gillnet pairs: gillnets were manufactured identically and with similar material to what is typically used in the area, and were deployed during normally occuring fishing hours for the same amount of time. However, sampling effort was different, with sea turtle bycatch being measured every hour but target fish catch were not measured every hour.
+=======
+Due to the difference in sample size (target fish N = 21, sea turtle bycatch N = 67), results cannot be generalized and interspecific comparisons would be difficult to make. Experiments were done in one location, and we do not know how results would differ in different locations. Measurements were fairly consistent between gillnet pairs: gillnets were manufactured identically and with similar material to what is typically used in the area, and were deployed during normally occuring fishing hours for the same amount of time. However, sampling effort was different, with sea turtle bycatch being measured every hour but target fish catch were not measured every hour. 
+>>>>>>> main
 
 The authors found a 63% reduction in sea turtle bycatch with illuminated nets, however we found only a 34% reduction in sea turtle bycatch with illuminated nets. This could be due to differences in data. Despite using different data, we still see a reduction in bycatch indicating that illuminated nets could be a good conservation solution with low effort required by fishermen.
 
