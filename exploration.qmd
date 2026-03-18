@@ -741,7 +741,9 @@ Was a GLMM Tweedie the right choice? Yes and no! For the sea turtle experiment, 
 
 Due to the difference in sample size (target fish N = 21, sea turtle bycatch N = 67), results cannot be generalized and inter-specific comparisons would be difficult to make. Experiments were done in one location, and we do not know how results would differ in different locations. Measurements were fairly consistent between gillnet pairs: gillnets were manufactured identically and with similar material to what is typically used in the area, and were deployed during normally occuring fishing hours for the same amount of time. However, sampling effort was different, with sea turtle bycatch being measured every hour but target fish catch were not measured every hour.
 
-The authors found a 63% reduction in sea turtle bycatch with illuminated nets, however we found only a 34% reduction in sea turtle bycatch with illuminated nets. This could be due to differences in data. Despite using different data, we still see a reduction in bycatch indicating that illuminated nets could be a good conservation solution with low effort required by fishermen.
+The authors found a 63% reduction in sea turtle bycatch with illuminated nets, however we found only an approximate 51% reduction in sea turtle bycatch with illuminated nets. The original paper found this reduction to be statistically significant but our analysis resulted in findings that are not statistically significant. This could be due to differences in data. Despite using different data, we still see a reduction in bycatch indicating that illuminated nets could be a good conservation solution with low effort required by fishermen.
+
+
 
 # References
 
