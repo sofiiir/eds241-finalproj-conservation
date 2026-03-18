@@ -47,7 +47,7 @@ The data for this study, Senko et al 2025, consists of 4 columns and 784 rows.
 
 Our key outcome variable for this study is BPUE/CPUE, with variations of animal type as a grouping variable (turtle BPUE or target fish CPUE). Our treatment is exp_unit, indicating if that gillnet bycatch observation was from an illuminated net or not. This study compared 28 gillnet pairs of equal size/material over a time period of July-September 2019 (assessing sea turtle bycatch) and February-March 2020 (assessing target fish catch). These experiments were conducted in Baja California Sur (BCS), Mexico, where bottom-set gillnet results in high bycatch rates and subsequent mortality of sea turtles.
 
-**The data for this study is not available publicly at this time. A similar dataset was located on Jesse Senko's, the first author, [Open Science Framework](https://osf.io/fmxby/files/u2y8e). The data located to recreate the methods of this study has the same data components, however, differences in findings are likely due to the data discrepancies.**
+**The data for this study is not available publicly at this time. A similar dataset was located on Jesse Senko's, the first author, [Open Science Framework](https://osf.io/fmxby/files/u2y8e). The data located to recreate the methods of this study has the same data components, however, differences in findings are likely due to the data discrepancies. Since the original study being recreated employed a novel flashing solar illumination method the data located for this analysis recreation is likely using static illumination powered by batteries or glow sticks. This data analysis recreation is therefore for learning purposes only!**
 
 Each row is an observation of total BPUE/CPUE for that gillnet pair, treatment or control type, and animal type for the time period of this experiment. We have cleaned column headers/variable names and have pivoted the data from wide to long outside of this script. We did not perform any data cleaning that resulted in loss of data.
 
@@ -162,9 +162,14 @@ bpue_glm <- gam(bpue ~ treatment + # total bpue regressed on treatment
                 data = bpue) # data source
 
 summary(bpue_glm)
+
+#calculate percent change
+bpue_perc_change <- (exp(bpue_glm$coefficients[2]) - 1) * 100
+
+print(paste0("The percent change for BPUE is ", bpue_perc_change, " percent"))
 ```
 
-Illuminated nets reduce all bycatch by an estimated average of 0.348 compared to non-illuminated nets. This estimate is significant with a p-value p \< 0.05, meaning this relationship is not due to random chance alone.
+Illuminated nets reduce all bycatch by an estimated average of approximately 65% compared to non-illuminated nets. This estimate is significant with a p-value p \< 0.05, meaning this relationship is not due to random chance alone.
 
 # `GLMM` on the turtle BPUE data
 
@@ -214,9 +219,14 @@ turtle_bpue_glm <- gam(bpue ~ treatment + # sea turtle bpue regressed on treatme
                        data = turtle_bpue) # sea turtle data
 
 summary(turtle_bpue_glm)
+
+#calculate percent change
+turtle_perc_change <- (exp(turtle_bpue_glm$coefficients[2]) - 1) * 100
+
+print(paste0("The percent change for turtle BPUE is ", turtle_perc_change, " percent"))
 ```
 
-Illuminated nets reduce sea turtle bycatch by an estimated average of 0.494 compared to non-illuminated nets. This estimate is not significant at p \< 0.05 (p = 0.22), meaning this relationship could be due to random chance.
+Illuminated nets reduce sea turtle bycatch by an estimated average of approximately 51% compared to non-illuminated nets. This estimate is not significant at p \< 0.05 (p = 0.22), meaning this relationship could be due to random chance.
 
 # `GLMM` on the CPUE data
 
@@ -263,9 +273,14 @@ cpue_glm <- gam(cpue ~ treatment + # target fish cpue regressed on treatment
                 data = cpue) # cpue data
 
 summary(cpue_glm)
+
+#calculate percent change
+cpue_perc_change <- (exp(cpue_glm$coefficients[2]) - 1) * 100
+
+print(paste0("The percent change for CPUE is ", cpue_perc_change, " percent"))
 ```
 
-Illuminated nets increase target fish CPUE by an estimated average of 1.131 when compared to non-illuminated nets. This estimate is not significant at p \< 0.05 (p = 0.5291).
+Illuminated nets increase target fish CPUE by an estimated average of approximately 13% when compared to non-illuminated nets. This estimate is not significant at p \< 0.05 (p = 0.5291) meaning this change could be due to random chance.
 
 ## Calculate predictions for mean and standard errors
 
@@ -353,9 +368,6 @@ A histogram of residuals is utilized to assess whether the residuals are approxi
 For GLMMs, raw residuals are not expected to follow a normal distribution, particularly when using non-Gaussian families such as Tweedie. Ideally, [model diagnostics are instead performed using simulated quantile residuals](https://stats.stackexchange.com/questions/295340/what-to-do-with-glm-gamma-when-residuals-are-not-normally-distributed) from the [DHARma](https://cran.r-project.org/web/packages/DHARMa/vignettes/DHARMa.html) package, as quantile residuals are specifically designed to follow a normal distribution. In this analysis, however, DHARma residuals could not be computed directly due to package constraints. As a result, this cavaet should be kept in mind when considering the normality of residuals assumption. Instead, a histogram
 
 ```{r}
-# check assumptions on sea turtle GLMM
-gam.check(turtle_bpue_glm)
-
 # Extract residuals from model
 bpue_resid <- residuals(turtle_bpue_glm)
 
@@ -727,10 +739,10 @@ Both experiments (sea turtle bycatch and target fish) were done during different
 
 Was a GLMM Tweedie the right choice? Yes and no! For the sea turtle experiment, data followed a tweedie distribution (positively skewed, many zeros, non-negative, and non-independent), residuals do not follow a normal distribution but the relationship between response residuals and fitted value residuals looks appropriate for a GLMM. For the target fish experiment, however, data followed a tweedie distribution, and residuals follow a normal distribution, BUT relationship between response residuals and fitted value residuals indicated a GLMM Tweedie was likely not the best statistical analysis choice.
 
-Due to the difference in sample size (target fish N = 21, sea turtle bycatch N = 67), results cannot be generalized and interspecific comparisons would be difficult to make. Experiments were done in one location, and we do not know how results would differ in different locations. Measurements were fairly consistent between gillnet pairs: gillnets were manufactured identically and with similar material to what is typically used in the area, and were deployed during normally occuring fishing hours for the same amount of time. However, sampling effort was different, with sea turtle bycatch being measured every hour but target fish catch were not measured every hour.
+Due to the difference in sample size (target fish N = 21, sea turtle bycatch N = 67), results cannot be generalized and inter-specific comparisons would be difficult to make. Experiments were done in one location, and we do not know how results would differ in different locations. Measurements were fairly consistent between gillnet pairs: gillnets were manufactured identically and with similar material to what is typically used in the area, and were deployed during normally occuring fishing hours for the same amount of time. However, sampling effort was different, with sea turtle bycatch being measured every hour but target fish catch were not measured every hour.
 
 The authors found a 63% reduction in sea turtle bycatch with illuminated nets, however we found only a 34% reduction in sea turtle bycatch with illuminated nets. This could be due to differences in data. Despite using different data, we still see a reduction in bycatch indicating that illuminated nets could be a good conservation solution with low effort required by fishermen.
 
 # References
 
--   Senko, J. F., J. Wang, K. M. Burgher, et al. 2025. “Harnessing SolarEnergy to Reduce Sea Turtle Bycatch.” Conservation Letters 18, no. 5:e13151.
+-   Senko, J. F., J. Wang, K. M. Burgher, et al. 2025. “Harnessing Solar Energy to Reduce Sea Turtle Bycatch.” Conservation Letters 18, no. 5:e13151.
