@@ -362,7 +362,6 @@ Conversely, we can see illuminated nets had a larger target fish catch than non-
 
 The authors mention residual checks as an assumption check, so we will replicate below along with other assumption checks.
 
-
 ## Distribution Determination Using AIC
 
 AIC (Akaike Information Criterion) was used to compare model fit across distributions while accounting for model complexity, with lower AIC values indicating a better balance between goodness of fit and parsimony. A Gamma distribution was chosen as the comparison because like the Tweedie distribution, it handles right-skewed positive data within the same GLM framework. However, the Gamma is undefined at zero, so a slight adjustment of .0001 was added before fitting.
@@ -407,7 +406,7 @@ bpue_aic
 cpue_aic
 ```
 
-The Tweedie produced the lowest AIC for the BPUE model, confirming it as the better-fitting distribution. However, the Gamma distribution resulted in the lower AIC score compared to a Tweedie distribution for the CPUE model, suggesting that Tweedie does not provide a best fit to the data for this model.
+The Tweedie did not produce the lowest AIC for the BPUE model (329.01), confirming that it is not the better-fitting distribution compared to a Gamm distribution (9.12). The Gamma distribution (645.18) also resulted in the lower AIC score compared to a Tweedie distribution (-1652.83) for the CPUE model, suggesting that Tweedie does not provide a best fit to the data for this model.
 
 ## Residual Plots
 
@@ -450,7 +449,7 @@ The CPUE residuals vs. fitted plot shows a stronger systematic pattern than the 
 
 ## Confirming Overdispersion
 
-The Tweedie distribution works well for zero-inflated and continuous, positively skewed data because it can handle both exact zeros and positive values within a single model. This means a separate test for zero inflation is not required. To assess model fit, the dispersion parameter in the summary output can be examined. This parameter indicates whether the model has properly captured how spread out the data is. Unlike simpler models such as the Poisson distribution for count data, which often struggle when the data are more variable than expected (Poisson assumes the mean equals the variance), the Tweedie model estimates this spread directly from the data.
+To assess model fit, the dispersion parameter in the summary output can be examined. This parameter indicates whether the model has properly captured how spread out the data is. Unlike simpler models such as the Poisson distribution for count data, which often struggle when the data are more variable than expected (Poisson assumes the mean equals the variance), the Tweedie model estimates this spread directly from the data.
 
 If the dispersion value is reasonable, then it suggests that the model has adequately captured the variability without requiring additional adjustments. Below, the mean and variance of the turtle BPUE and CPUE data are compared to assess overdispersion, and the dispersion parameters extracted from each model are used to confirm that the Tweedie distribution adequately captured the variance structure of the data.
 
@@ -492,11 +491,21 @@ Because the Tweedie distribution allows variance to scale with the mean, it is m
 
 ## Confirming Zero-Inflation
 
-```{r}
+The Tweedie distribution works well for zero-inflated and continuous, positively skewed data because it can handle both exact zeros and positive values within a single model. We will run a separate check to see if our data are zero-inflated, indicating our model is appropriately estimating our relationship. 
 
-check_zeroinflation(turtle_bpue_glm)
-testZeroInflation(turtle_bpue_glm)
+Below is a check from the `DHARMa` package that checks our model and data for zero-inflation. It works by comparing simulated data to the expected zeros of our model. We are expecting a `ratioObsSim` value greater than 1, indicating our data are zero-inflated which is what we expect for a GLMM Tweedie model.
+
+```{r}
+# check zero-inflation for sea turtle bycatch
+bpue_zero_check <- DHARMa::testZeroInflation(bpue_glm)
+print(paste0("Sea Turtle BPUE ratio: ", round(bpue_zero_check$statistic[['ratioObsSim']], 3)))
+
+# check zero-inflation for target fish catch
+cpue_zero_check <- DHARMa::testZeroInflation(cpue_glm)
+print(paste0("Sea Turtle BPUE ratio: ", round(cpue_zero_check$statistic[['ratioObsSim']], 3)))
 ```
+
+As we can see, the returned zero-inflation statistic for both the sea turtle BPUE and target fish CPUE are not greater than 1, indicating we do not have zero-inflation and a Tweedie distribution may not be appropriate for these data. It is worth noting, though, that we can still use a Tweedie with non-zero inflated data.
 
 # Confidence Intervals
 
@@ -695,7 +704,9 @@ Was this causal identification credible? We will argue that its not!
 
 Both experiments (sea turtle bycatch and target fish) were done during different seasons, nets deployed at different locations and depths, different sampling frequency overnight, and run for different lengths of time the nets were in the water. This makes between-sample comparisons inaccurate. We cannot compare sea turtle bycatch in illuminated nets to target fish catch in illuminated nets. Additionally, target fish (n = 21) had a much smaller sample size compared to sea turtle bycatch (n = 67), making comparisons difficult. Nets were placed at many sites in one location and rotated between depths, but it is unclear how far apart each site was from another, opening up the possibility for spillover between sites.
 
-Was a GLMM Tweedie the right choice? Yes and no! For the sea turtle experiment, data followed a tweedie distribution (positively skewed, many zeros, non-negative, and non-independent), residuals do not follow a normal distribution but the relationship between response residuals and fitted value residuals looks appropriate for a GLMM. For the target fish experiment, however, data followed a tweedie distribution, and residuals follow a normal distribution, BUT relationship between response residuals and fitted value residuals indicated a GLMM Tweedie was likely not the best statistical analysis choice.
+Was a GLMM Tweedie the right choice? Yes and no! For the sea turtle experiment, data followed a tweedie distribution (positively skewed, many zeros, non-negative, and non-independent), and the relationship between response residuals and fitted value residuals looks appropriate for a GLMM. For the target fish experiment, however, the data did not follow a Tweedie distribution; however, the relationship between response residuals and fitted value residuals indicated a GLMM Tweedie was likely not the best statistical analysis choice.
+
+The AIC score comparison further solidifies the choice against a Tweedie distribution. The `turtle_bpue_glm` had a lower AIC score following a Gamma distribution compared to a Tweedie distribution, supporting the choice for a Gamma as a better fit. Similarly, the `cpue_glm`, had a much higher score for a Tweedie distribution compared to a Gamma, suggesting that a Tweedie distribution was likely not suitable for handling model complexity among the comparisons of these two distributions.
 
 Due to the difference in sample size (target fish n = 21, sea turtle bycatch n = 67), results cannot be generalized and inter-specific comparisons would be difficult to make. Experiments were done in one location, and we do not know how results would differ in different locations. Measurements were fairly consistent between gillnet pairs: gillnets were manufactured identically and with similar material to what is typically used in the area, and were deployed during normally occuring fishing hours for the same amount of time. However, sampling effort was different, with sea turtle bycatch being measured every hour but target fish catch were not measured every hour.
 
