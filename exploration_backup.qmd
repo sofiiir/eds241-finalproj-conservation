@@ -1,24 +1,23 @@
 ---
 title: "Replicating Senko, J. et al. 2025, Harnessing Solar Energy to Reduce Sea Turtle Bycatch "
 format: html
+
 author: Leela Dixit, Sofia Rodas, & Vedika Shirtekar
-date: "03/20/2026"
+date: "03/06/2026"
 warning: false
 message: false
 code-fold: true
-editor_options: 
-  chunk_output_type: console
 ---
 
 ![Man fishing with illuminated nets](images/fishing_illum.png)
 
 # Introduction
 
-This blog post replicates the study Harnessing Solar Energy to Reduce Sea Turtle Bycatch, Senko, J. et al. 2025, which studies how illuminating fish nets with solar powered lights effects target fish catch and bycatch. This study explores solar lighting as it is a sustainable solution to illuminating nets which previous research has indicated reduces large animal bycatch. The goal of the illumination of the nets in this study is to determine whether solar lights significantly reduce sea turtle bycatch. The study analyzes the Bycatch Per Unit Effort (BPUE) of sea turtles and the Catch Per Unit Effort (CPUE) for target fish species.
+This blog post replicates the study Harnessing Solar Energy to Reduce Sea Turtle Bycatch, Senko, J. et al. 2025, which studies how illuminating fish nets influences target fish catch and bycatch. This study explores the sustainable solution of using solar energy light sticks to illuminate nets with the goal of avoiding sea turtle bycatch. The study analyzes the Bycatch Per Unit Effort (BPUE) of sea turtles and the Catch Per Unit Effort (CPUE) for target fish species. The hypothesis is that illuminating fishing nets with solar powered lights will reduce BPUE but not impact CPUE. This paper builds on the findings of other research that has found illumination to be helpful in combating sea turtle bycatch.
 
-The hypothesis is that illuminating fishing nets with solar powered lights will reduce BPUE but not impact CPUE. This paper builds on the findings of other research that has found illumination to be helpful in combating sea turtle bycatch.
+The CPUE and BPUE studies both have illuminated nets (treated) and controlled nets (untreated) in their experiment. This paper uses a Generalized Linear Mixed Model (GLMM) which uses both random and fixed effects. Specifically, they use a Tweedie model which is used when the data distribution includes zero and is continuously positive otherwise.
 
-The CPUE and BPUE studies both have illuminated nets (treated) and controlled nets (untreated) to analyze if catches are different for each animal category. They deployed both sets of nets in CPUE and BPUE analysis in Baja California Sur, Mexico with the help and input of local fisherman.
+In this tutorial readers will see a case study of when to use a GLMM with the Tweedie distribution. Readers will also learn about the assumptions for the GLMM and Tweedie distribution as well as how to conduct model checks that verify that the appropriate model is being utilized.
 
 ### Load libraries
 
@@ -29,7 +28,6 @@ library(stats)
 library(here)
 library(DHARMa)
 library(kableExtra)
-library(performance)
 ```
 
 Load data
@@ -43,48 +41,38 @@ catch_data <- read_csv(here("data", "fishnet_illumination_bpue.csv"))
 The data for this study, Senko et al 2025, consists of 4 columns and 784 rows.
 
 | Column Header | gillnet_pair | animal_type | exp_unit | bpue |
-|---------------|---------------|---------------|---------------|---------------|
-| Description | A numeric value 1-28 indicating which gillnet pair this sample is from. | Categorical variable describing which animal type this observation is for. | Categorical variable indicating treatment (illuminated) or control. | Numeric value of catch. This number is on the scale of BPUE or CPUE depending on animal type. |
+|----|----|----|----|----|
+| Description | A numeric value 1-28 indicating which gillnet pair this sample is from. | Categorical variable describing which animal type this observation is for. | Categorical variable indicating treatment (illuminated) or control. | Numeric value of catch. This number is on the scale of bpue or cpue depending on animal type. |
 
-Our key outcome variable for this study is BPUE/CPUE, with variations of animal type as a grouping variable (turtle BPUE or target fish CPUE). Our treatment is exp_unit, indicating if that gillnet bycatch observation was from an illuminated net or not. This study compared 28 gillnet pairs of equal size/material over a time period of July-September 2019 (assessing sea turtle bycatch) and February-March 2020 (assessing target fish catch). These experiments were conducted in Baja California Sur (BCS), Mexico, where bottom-set gillnet results in high bycatch rates and subsequent mortality of sea turtles.
+Our key outcome variable for this study is bpue/cpue, with variations of animal type as a grouping variable (turtle bpue or target fish cpue). Our treatment is exp_unit, indicating if that gillnet bycatch observation was from an illuminated net or not. This study compared 28 gillnet pairs of equal size/material over a time period of July-September 2019 (assessing sea turtle bycatch) and February-March 2020 (assessing target fish catch). These experiments were conducted in Baja California Sur (BCS), Mexico, where bottom-set gillnet results in high bycatch rates and subsequent mortality of sea turtles.
 
-**The data for this study is not available publicly at this time. A similar dataset was located on Jesse Senko's, the first author, [Open Science Framework](https://osf.io/fmxby/files/u2y8e). The data located to recreate the methods of this study has the same data components, however, differences in findings are likely due to the data discrepancies. Since the original study being recreated employed a novel flashing solar illumination method the data located for this analysis recreation is likely using static illumination powered by batteries or glow sticks. This data analysis recreation is therefore for learning purposes only!**
-
-Each row is an observation of total BPUE/CPUE for that gillnet pair, treatment or control type, and animal type for the time period of this experiment. We have cleaned column headers/variable names and have pivoted the data from wide to long outside of this script. We did not perform any data cleaning that resulted in loss of data.
-
-In this tutorial readers will see a case study of the use of a GLMM with the Tweedie distribution. Readers will also learn about the assumptions for the GLMM and Tweedie distribution as well as how to conduct model checks that verify that the appropriate model is being utilized.
+Each row is an observation of total bpue/cpue for that gillnet pair, treatment or control type, and animal type for the time period of this experiment. We have cleaned column headers/variable names and have pivoted the data from wide to long before reading in data to this script. We did not perform any data cleaning that resulted in loss of data.
 
 # General Linear Mixed Model (GLMM) with a Tweedie distribution
 
-This paper uses a Generalized Linear Mixed Model (GLMM) which uses both random and fixed effects. A GLMM is best for dealing with data that is non-normally distributed data that are not independent of each other. Specifically, they use a Tweedie model which is used when the data distribution includes zero and is continuously positive otherwise. Since the intention of the tutorial is to follow the methods of Senko, J. et al. 2025, all of the methods were replicated as denoted in their paper. The paper does not address assumptions, best fit, or reasons for choosing the specific model. Hence this tutorial attempts to extrapolate their reasoning.
-
 ## BPUE and CPUE data frame cleaning
 
-The paper runs separate statistical analysis on Bycatch Per Unit Effort (BPUE) and Catch Per Unit Effort (CPUE). The BPUE analysis was only completed for sea turtles, not for all by-catch but we'll run analysis on both at least for exploration.
+The paper runs a separate GLMM for Bycatch Per Unit Effort (BPUE) and Catch Per Unit Effort (CPUE). The BPUE analysis was only completed for sea turtles, not for all by-catch but we'll run both at least for exploration.
 
-First, let's make two separate data frames one for BPUE and one for CPUE.
+Let's make two separate data frames one for each.
 
 BPUE is created by just selecting the appropriate rows.
 
 ```{r}
-# clean bpue data
-bpue <- catch_data |> 
+bpue <- catch_data %>% 
   filter(animal_type == "total_bpue" | animal_type == "non_finfish_bpue" | animal_type == "finfish_bpue" | animal_type == "elasmobranch_bpue" | animal_type == "humboldt_squid_bpue" | animal_type == "loggerhead_biomass_bpue" | animal_type == "loggerhead_number_bpue")
 
-# filter for sea turtles only
-turtle_bpue <- catch_data |> 
+turtle_bpue <- catch_data %>% 
   filter(animal_type == "loggerhead_biomass_bpue" | animal_type == "loggerhead_number_bpue")
 ```
 
-CPUE names are wrong. Filter for the appropriate rows, then pivot to make changing the names easier before pivotting back for a tidy data frame.
+CPUE names are wrong. Filter for the appropriate rows, then pivot to make changing the names easier before pivotting back.
 
 ```{r}
-# clean cpue data
-cpue <- catch_data |> 
-  filter(animal_type == "total_fish_bpue" | animal_type == "total_primary_fish_bpue" | animal_type == "halibut_bpue" | animal_type == "grouper_bpue" | animal_type == "total_secondary_fish_bpue") |> 
+cpue <- catch_data %>% 
+  filter(animal_type == "total_fish_bpue" | animal_type == "total_primary_fish_bpue" | animal_type == "halibut_bpue" | animal_type == "grouper_bpue" | animal_type == "total_secondary_fish_bpue") %>% 
   pivot_wider(names_from = animal_type,
-              values_from = bpue) |> 
-  # rename observations from bpue to cpue
+              values_from = bpue) %>% 
   rename("total_fish_cpue" = "total_fish_bpue", 
          "total_primary_fish_cpue" = "total_primary_fish_bpue",
          "halibut_cpue" = "halibut_bpue",
@@ -94,8 +82,7 @@ cpue <- catch_data |>
                         total_primary_fish_cpue, 
                         halibut_cpue, 
                         grouper_cpue, 
-                        total_secondary_fish_cpue)) |> 
-  # rename columns
+                        total_secondary_fish_cpue)) %>% 
   rename("treatment"= "exp_unit",
          "catch" = "name",
          "cpue" = "value")
@@ -115,7 +102,6 @@ bpue <- bpue %>%
 ### Initial exploration plot
 
 ```{r}
-# plot total bpue by treatment
 ggplot() +
   geom_histogram(data = bpue, 
                  aes(x = bpue,
@@ -144,33 +130,15 @@ Our entire BPUE data set follow a tweedie distribution: zero-inflated and positi
 
 `Tweedie()` explanation. https://stat.ethz.ch/R-manual/R-devel/library/mgcv/html/Tweedie.html
 
-Tweedie distributions are a family of probability distributions, often used as distributions for generalized linear models like the one we are using here. They are categorized as high number of zero observations with a positively skewed distribution, like we saw above.
-
-#### What is a `gam()`?
-
-`gam()` is a generalized additive model. The GAM allows for more model flexibility and non-linear relationships. Our data do not follow a linear relationship, so `gam()` is a better choice than `glm()`.
-
-For more information on GAM models as well as an in-depth explanation of when and how to use them this is a great recorded webinar titled the [Introduction to Generalized Additive Models with R and mgcv](https://www.google.com/search?q=gam()+r+from+the+mgcv+package&oq=gam()+r+from+the+mgcv+package&gs_lcrp=EgZjaHJvbWUyBggAEEUYOTIHCAEQIRigATIHCAIQIRigATIHCAMQIRiPAtIBCTExNDkzajBqN6gCALACAA&sourceid=chrome&ie=UTF-8#fpstate=ive&vld=cid:1afdb9fa,vid:sgw4cu8hrZM,st:8.239).
-
-**Since the purpose of this tutorial is to analyze the methodologies conducted by Senko, J. et al. 2025, a `gam()` is used as the model to analyze statistical differences between treatment groups since this is the methodology employed in the paper.**
-
-In the `gam()` model below BPUE is the outcome, the fixed effect stems from treatment, and gillnet_pair is used as a random effect.
+Tweedie distributions are a family of probability distributions, often used as distributions for generalized linear models like we are using here. They are categorized as high number of zero observations with a positively skewed distribution, like we saw above.
 
 ```{r}
-bpue_glm <- gam(bpue ~ treatment + # total bpue regressed on treatment
-                  s(gillnet_pair, bs = 're'), # random effect
-                family = tw(link = log), # log-link
-                data = bpue) # data source
+bpue_glm <- gam(bpue ~ treatment + s(gillnet_pair, bs = 're'),
+                family = tw(link = log),
+                data = bpue)
 
 summary(bpue_glm)
-
-#calculate percent change
-bpue_perc_change <- (exp(bpue_glm$coefficients[2]) - 1) * 100
-
-print(paste0("The percent change for BPUE is ", bpue_perc_change, " percent"))
 ```
-
-Illuminated nets reduce all bycatch by an estimated average of approximately 65% compared to non-illuminated nets. This estimate is significant with a p-value p \< 0.05, meaning this relationship is not due to random chance alone.
 
 # `GLMM` on the turtle BPUE data
 
@@ -207,27 +175,13 @@ theme(panel.background = element_rect(fill = "#2d2f33"),
 
 ```
 
-BPUE for loggerhead turtles also has a right skewed distribution and contains a large amount of zeros. This distribution is positively skewed and does not contain any negatives.
-
 ## Fit the `gam()` for the turtle bpue
 
-In the `gam()` model below turtle BPUE is the outcome, the fixed effect stems from treatment, and gillnet_pair is used as a random effect.
-
 ```{r}
-turtle_bpue_glm <- gam(bpue ~ treatment + # sea turtle bpue regressed on treatment
-                         s(gillnet_pair, bs = 're'), # random effect
-                       family = tw(link = log), # log link
-                       data = turtle_bpue) # sea turtle data
-
-summary(turtle_bpue_glm)
-
-#calculate percent change
-turtle_perc_change <- (exp(turtle_bpue_glm$coefficients[2]) - 1) * 100
-
-print(paste0("The percent change for turtle BPUE is ", turtle_perc_change, " percent"))
+turtle_bpue_glm <- gam(bpue ~ treatment + s(gillnet_pair, bs = 're'),
+                       family = tw(link = log),
+                       data = turtle_bpue)
 ```
-
-Illuminated nets reduce sea turtle bycatch by an estimated average of approximately 51% compared to non-illuminated nets. This estimate is not significant at p \< 0.05 (p = 0.22), meaning this relationship could be due to random chance.
 
 # `GLMM` on the CPUE data
 
@@ -261,27 +215,13 @@ theme(panel.background = element_rect(fill = "#2d2f33"),
         strip.text = element_text(color = "white")) 
 ```
 
-Target fish CPUE has a right skewed distribution and contains a large amount of zeros. This distribution is positively skewed and does not contain any negatives.
-
 ## Fit the `gam()` for the cpue
 
-In the `gam()` model below CPUE is the outcome, the fixed effect stems from treatment, and gillnet_pair is used as a random effect. Random effects are included in this model to handle clustered/hierarchical data and manage unobserved heterogeneity within groups. This also helps to allow for overdispersion.
-
 ```{r}
-cpue_glm <- gam(cpue ~ treatment + # target fish cpue regressed on treatment
-                  s(gillnet_pair, bs = 're'), # random effect
-                family = tw(link = log), # log link
-                data = cpue) # cpue data
-
-summary(cpue_glm)
-
-#calculate percent change
-cpue_perc_change <- (exp(cpue_glm$coefficients[2]) - 1) * 100
-
-print(paste0("The percent change for CPUE is ", cpue_perc_change, " percent"))
+cpue_glm <- gam(cpue ~ treatment + s(gillnet_pair, bs = 're'),
+                family = tw(link = log),
+                data = cpue)
 ```
-
-Illuminated nets increase target fish CPUE by an estimated average of approximately 13% when compared to non-illuminated nets. This estimate is not significant at p \< 0.05 (p = 0.5291) meaning this change could be due to random chance.
 
 ## Calculate predictions for mean and standard errors
 
@@ -304,7 +244,6 @@ prediction_fish <- stats::predict(cpue_glm,
 # join predictions to original data
 cpue_prediction <- cbind(cpue, as.data.frame(prediction_fish))
 
-# plot sea turtle bycatch
 bpue_prediction %>%
   filter(animal_type == "loggerhead_number_bpue") %>% 
   group_by(treatment) %>% 
@@ -332,7 +271,6 @@ bpue_prediction %>%
 We can see that illuminted nets had a very small amount of sea turtle bycatch when compared to non-illuminated nets. The predicted standard errors are not too large, indicating our model was likely appropriate for our data but we will double check further down!
 
 ```{r}
-# plot target fish catch
 cpue_prediction %>%
   group_by(treatment) %>% 
   summarise(mean_fit = mean(fit),
@@ -360,25 +298,20 @@ Conversely, we can see illuminated nets had a larger target fish catch than non-
 
 # Parametric and Assumption Checks
 
-The authors mention residual checks as an assumption check, so we will replicate below along with other assumption checks.
-
-
 ## Distribution Determination Using AIC
 
-AIC (Akaike Information Criterion) was used to compare model fit across distributions while accounting for model complexity, with lower AIC values indicating a better balance between goodness of fit and parsimony. A Gamma distribution was chosen as the comparison because like the Tweedie distribution, it handles right-skewed positive data within the same GLM framework. However, the Gamma is undefined at zero, so a slight adjustment of .0001 was added before fitting.
+AIC (Akaike Information Criterion) was used to compare model fit across distributions while accounting for model complexity, with lower AIC values indicating a better balance between goodness of fit and parsimony. A Gamma distribution was chosen as the comparison because like the Tweedi distribution, it handles right-skewed positive data within the same GLM framework. However, the Gamma is undefined at zero, so a slight adjustment of .001 was added before fitting. The Tweedie produced the lowest AIC for both the BPUE and CPUE models, confirming it as the better-fitting distribution. The Tweedie distribution had the lowest AIC for both models compared to a Gaussian distribution, indicating it provided the best fit to the data.
 
 ```{r}
 ## AIC comparison 
 # Looking for lowest score to determine best distribution
-bpue_gamma <- gam(bpue + .0001 ~ # 0.001 because data need to be positive, continuous
-                    treatment + s(gillnet_pair, bs = 're'),
+bpue_gamma <- gam(bpue + .001 ~ treatment + s(gillnet_pair, bs = 're'),
                   family = Gamma(link = "log"),
                   data = bpue)
 
 ## AIC comparison 
 # Looking for lowest score to determine best distribution
-cpue_gamma <- gam(cpue + .0001 ~ # 0.0001 because data need to be positive, continuous
-                    treatment + s(gillnet_pair, bs = 're'), 
+cpue_gamma <- gam(cpue + .001 ~ treatment + s(gillnet_pair, bs = 're'), 
                      family = Gamma(link = "log"),
                      data = cpue)
 ```
@@ -407,15 +340,14 @@ bpue_aic
 cpue_aic
 ```
 
-The Tweedie produced the lowest AIC for the BPUE model, confirming it as the better-fitting distribution. However, the Gamma distribution resulted in the lower AIC score compared to a Tweedie distribution for the CPUE model, suggesting that Tweedie does not provide a best fit to the data for this model.
-
 ## Residual Plots
 
-In a simple linear regression (OLS), residuals can be observed directly because they are assumed to be normally distributed. In a GLMM, however, residuals are not expected to be normally distributed given that GLMMs work well for non-normally distributed data, as is common with ecological data. Here, residual plots were created manually to assess model fit and verify that the Tweedie distribution with a log link is appropriate for the data.The residuals vs fitted plot checks for systematic patterns that would indicate a poor fit, specifically non-linearity in the relationship between the predictor and log-transformed mean, and heteroscedasticity (spread of residuals changes across the range of fitted values).
+In a simple linear regression (OLS), residuals can be observed directly because they are assumed to be normally distributed. In a GLMM, however, residuals are not expected to be normally distributed given that GLMMs work well for non-normally distributed data, as is common with ecological data. Here, residual plots were created manually to assess model fit and verify that the Tweedie distribution with a log link is appropriate is for the data. The residual plot checks for systematic patterns that would indicate a poor fit.
 
 ```{r}
 #| message: false
 ## Create residuals plot based on fitted values and residuals of glmm
+
 data.frame(
   fitted = fitted(turtle_bpue_glm), # Use fitted() to simulate glmm fitted values 
   residuals = residuals(turtle_bpue_glm)) %>% # Use residuals() to obtain glmm fitted values 
@@ -446,7 +378,7 @@ data.frame(
          title = "Residuals vs Fitted of CPUE GLMM")
 ```
 
-The CPUE residuals vs. fitted plot shows a stronger systematic pattern than the BPUE plot, with a noticeable downward curve at low fitted values. While some asymmetry is expected in a Tweedie model due to zero-inflated data, this clear trend suggests the CPUE model fits the data less well than the BPUE model. As such, the directional pattern in the residuals indicates that the Tweedie GLMM does not fully absorb zero inflation in the CPUE data resulting in a poorer fit compared to the BPUE model.
+The CPUE residuals vs. fitted plot shows a stronger systematic pattern than the BPUE plot, with a noticeable downward curve at low fitted values. While some asymmetry is expected in a Tweedie model due to zero-inflated data, this clear trend suggests the CPUE model fits the data less well than the BPUE model. This weaker fit may be partly due to the smaller CPUE sample size (n = 21 net pairs vs.n = 28 for BPUE) which limits the model’s ability to capture the underlying structure of the data. As such, the directional pattern in the residuals indicates that the Tweedie GLMM does not fully absorb zero inflation in the CPUE data resulting in a poorer fit compared to the BPUE model.
 
 ## Confirming Overdispersion
 
@@ -489,14 +421,6 @@ dispersion_df
 The Tweedie distribution models variance as a function of the mean, allowing it to increase flexibly rather than remaining fixed. The high variance-to-mean ratios (31.82 for turtle BPUE and 8.35 for CPUE) indicate that both datasets are strongly overdispersed. The extra variability is captured by the dispersion parameters: 14.72 (turtle BPUE model) and 2.40 (CPUE model).
 
 Because the Tweedie distribution allows variance to scale with the mean, it is more suitable than models like Poisson or Gaussian (assumes constant variance, supporting its use for both the BPUE and CPUE models. Additional information on the PDF structure of the Tweedie distribution and accompanying families are linked [here](https://andrewcharlesjones.github.io/journal/tweedie.html).
-
-## Confirming Zero-Inflation
-
-```{r}
-
-check_zeroinflation(turtle_bpue_glm)
-testZeroInflation(turtle_bpue_glm)
-```
 
 # Confidence Intervals
 
@@ -542,7 +466,7 @@ Bootstrap the turtle by-catch data.
 ```{r}
 #| warning: false
 
-# reiterate through the boot 10000 times
+# reiterate through the boot 1000 times
 boot <-  map_dfr(1:10000, \(i) {
 
   # sample with replacement
@@ -576,7 +500,7 @@ turtle_boot_ci <- boot %>%
 ```{r}
 #| warning: false
 
-# reiterate through the boot 10000 times
+# reiterate through the boot 1000 times
 boot <-  map_dfr(1:10000, \(i) {
 
   # sample with replacement
@@ -618,24 +542,20 @@ turtle_boot_ci <- turtle_boot_ci %>%
   group_by(treatment) %>% 
   mutate(upr_avg = mean(bpue_upr, na.rm = TRUE))
 
-# filter for illuminated net sea turtle CI
 ill_turtle <- turtle_boot_ci %>% 
   filter(treatment == "illuminated") %>% 
   head(n = 1)
 
-# filter for control net sea turtle CI
 cont_turtle <- turtle_boot_ci %>% 
   filter(treatment == "control") %>% 
   head(n = 1)
 
-# make data frame of upper and lower CI
 CI_df <- tibble(
   Treatment = c("Illuminated", "Control"),
   LowerCI = c(ill_turtle$lwr_avg, cont_turtle$lwr_avg),
   UpperCI = c(ill_turtle$upr_avg, cont_turtle$upr_avg)
 )
 
-# style data frame with kable()
 turtle_CI <- CI_df %>% 
   kable() %>% 
   kable_styling()
@@ -658,24 +578,20 @@ cpue_boot_ci <- cpue_boot_ci %>%
   group_by(treatment) %>% 
   mutate(upr_avg = mean(cpue_upr, na.rm = TRUE))
 
-# filter for illuminated net target fish CI
 ill_cpue <- cpue_boot_ci %>% 
   filter(treatment == "illuminated") %>% 
   head(n = 1)
 
-# filter for control net target fish CI
 cont_cpue <- cpue_boot_ci %>% 
   filter(treatment == "control") %>% 
   head(n = 1)
 
-# make data frame of upper and lower CI
 CI_df <- tibble(
   Treatment = c("Illuminated", "Control"),
   LowerCI = c(ill_cpue$lwr_avg, cont_cpue$lwr_avg),
   UpperCI = c(ill_cpue$upr_avg, cont_cpue$upr_avg)
 )
 
-# style data frame with kable()
 cpue_CI <- CI_df %>% 
   kable() %>% 
   kable_styling()
@@ -691,18 +607,39 @@ The confidence intervals for the mean CPUE are approximately the same between bo
 
 # Conclusions
 
-Was this causal identification credible? We will argue that its not!
+-   Causal identification credible?
 
-Both experiments (sea turtle bycatch and target fish) were done during different seasons, nets deployed at different locations and depths, different sampling frequency overnight, and run for different lengths of time the nets were in the water. This makes between-sample comparisons inaccurate. We cannot compare sea turtle bycatch in illuminated nets to target fish catch in illuminated nets. Additionally, target fish had a much smaller sample size compared to sea turtle bycatch, making comparisons difficult. Nets were placed at many sites in one location and rotated between depths, but it is unclear how far apart each site was from another, opening up the possibility for spillover between sites.
+    -   Some evidence for a credible causal identification (see assumptions below), but also some issues:
 
-Was a GLMM Tweedie the right choice? Yes and no! For the sea turtle experiment, data followed a tweedie distribution (positively skewed, many zeros, non-negative, and non-independent), residuals do not follow a normal distribution but the relationship between response residuals and fitted value residuals looks appropriate for a GLMM. For the target fish experiment, however, data followed a tweedie distribution, and residuals follow a normal distribution, BUT relationship between response residuals and fitted value residuals indicated a GLMM Tweedie was likely not the best statistical analysis choice.
+        -   bycatch and target fish experiments done during different seasons
 
-Due to the difference in sample size (target fish N = 21, sea turtle bycatch N = 67), results cannot be generalized and inter-specific comparisons would be difficult to make. Experiments were done in one location, and we do not know how results would differ in different locations. Measurements were fairly consistent between gillnet pairs: gillnets were manufactured identically and with similar material to what is typically used in the area, and were deployed during normally occuring fishing hours for the same amount of time. However, sampling effort was different, with sea turtle bycatch being measured every hour but target fish catch were not measured every hour.
+        -   between-sample conditions were not kept the same
 
-The authors found a 63% reduction in sea turtle bycatch with illuminated nets, however we found only an approximate 51% reduction in sea turtle bycatch with illuminated nets. The original paper found this reduction to be statistically significant but our analysis resulted in findings that are not statistically significant. This could be due to differences in data. Despite using different data, we still see a reduction in bycatch indicating that illuminated nets could be a good conservation solution with low effort required by fishermen.
+        -   target fish experiment had a much smaller sample size compared to sea turtle bycatch sample size
 
+-   assumptions what are they, did they have them?
 
+    -   Response variables followed Tweedie exponential dispersion model (variance is proportional to power of the mean `p`)
+    -   Data are non-negative, continuous (skewed right)
+    -   The relationship between predictor and log-transformed mean is linear
+    -   quantile residuals follow a normal distribution
+    -   power law: spread of residuals gets larger as the mean gets larger
+
+-   sampling validity who is in the sample, can results be generalized?
+
+    -   very small sample size of target fish (n = 21) vs sea turtle bycatch (n = 67)
+    -   only one sampling location
+
+-   measurement are outcome/treatment variables measured accurately without bias?
+
+    -   Sampling for sea turtle bycatch was checked every hour, but target fish experiment was not. All deployed for the same amount of time though (overnight 11-12 hours).
+    -   28 net pairs for sea turtle bycatch, and 14 net pairs for target fish experiments.
+    -   gillnet pairs were identical and similar material to what is already used, and deployed during times fishing would naturally occur.
+
+-   other limitations
+
+    -   The authors were looking only at blinking lights as illumination and comparing to previous studies looking only at solid light illumination.
 
 # References
 
--   Senko, J. F., J. Wang, K. M. Burgher, et al. 2025. “Harnessing Solar Energy to Reduce Sea Turtle Bycatch.” Conservation Letters 18, no. 5:e13151.
+-   Senko, J. F., J. Wang, K. M. Burgher, et al. 2025. “Harnessing SolarEnergy to Reduce Sea Turtle Bycatch.” Conservation Letters 18, no. 5:e13151.
