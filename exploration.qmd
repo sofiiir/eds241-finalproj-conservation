@@ -152,7 +152,7 @@ Tweedie distributions are a family of probability distributions, often used as d
 
 Fixed effects in `gam()` allow for between treatment comparison, between control and treatment comparisons.  Random effects are included in this model to handle clustered/hierarchical data and manage unobserved heterogeneity within groups. This also helps to allow for overdispersion.
 
-For more information on GAM models as well as an in-depth explanation of when and how to use them this is a great recorded webinar titled the [Introduction to Generalized Additive Models with R and mgcv](https://www.google.com/search?q=gam()+r+from+the+mgcv+package&oq=gam()+r+from+the+mgcv+package&gs_lcrp=EgZjaHJvbWUyBggAEEUYOTIHCAEQIRigATIHCAIQIRigATIHCAMQIRiPAtIBCTExNDkzajBqN6gCALACAA&sourceid=chrome&ie=UTF-8#fpstate=ive&vld=cid:1afdb9fa,vid:sgw4cu8hrZM,st:8.239).
+For more information on GAM models as well as an in-depth explanation of when and how to use them this is a great recorded webinar titled the [Introduction to Generalized Additive Models with R and mgcv](https://www.youtube.com/watch?v=sgw4cu8hrZM).
 
 **Since the purpose of this tutorial is to analyze the methodologies conducted by Senko, J. et al. 2025, a `gam()` is used as the model to analyze statistical differences between treatment groups since this is the methodology employed in the paper.**
 
@@ -718,6 +718,12 @@ The authors found a 63% reduction in sea turtle bycatch with illuminated nets, h
 
 # References
 
+-  Jones, A. 2020, November 21. Tweedie distributions. Andy Jones. https://andrewcharlesjones.github.io/journal/tweedie.html 
+
 -   Senko, J., 2021, June 30. OSF. https://osf.io/fmxby/files/u2y8e
 
 -   Senko, J. F., J. Wang, K. M. Burgher, et al. 2025. “Harnessing Solar Energy to Reduce Sea Turtle Bycatch.” Conservation Letters 18, no. 5:e13151.
+
+- Simpson, G. (2020, July 20). Introduction to Generalized Additive Models with R and mgcv. YouTube. https://www.youtube.com/watch?v=sgw4cu8hrZM 
+
+-  Wood, S. N. (n.d.). GAM Tweedie families. R-manual. https://stat.ethz.ch/R-manual/R-devel/library/mgcv/html/Tweedie.html 
