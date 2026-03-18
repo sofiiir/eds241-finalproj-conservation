@@ -46,7 +46,7 @@ The data for this study, Senko et al 2025, consists of 4 columns and 784 rows.
 |----|----|----|----|----|
 | Description | A numeric value 1-28 indicating which gillnet pair this sample is from. | Categorical variable describing which animal type this observation is for. | Categorical variable indicating treatment (illuminated) or control. | Numeric value of catch. This number is on the scale of BPUE or CPUE depending on animal type. |
 
-Our key outcome variable for this study is BPUE/CPUE, with variations of animal type as a grouping variable (turtle BPUE or target fish CPUE). Our treatment is exp_unit, indicating if that gillnet bycatch observation was from an illuminated net or not. This study compared 28 gillnet pairs of equal size/material over a time period of July-September 2019 (assessing sea turtle bycatch) and February-March 2020 (assessing target fish catch). These experiments were conducted in Baja California Sur (BCS), Mexico, where bottom-set gillnet results in high bycatch rates and subsequent mortality of sea turtles.
+Our key outcome variable for this study is BPUE/CPUE, with variations of animal type as a grouping variable (turtle BPUE or target fish CPUE). Our treatment is exp_unit, indicating gillnet bycatch observations comparing treatment methods, illuminated net or not. This study compared 28 gillnet pairs of equal size/material over a time period of July-September 2019 (assessing sea turtle bycatch) and February-March 2020 (assessing target fish catch). These experiments were conducted in Baja California Sur (BCS), Mexico, where bottom-set gillnet results in high bycatch rates and subsequent mortality of sea turtles. The unit of observation for this study is gillnet ID. 
 
 **The data for this study is not available publicly at this time. A similar dataset was located on Jesse Senko's, the first author, [Open Science Framework](https://osf.io/fmxby/files/u2y8e). The data located to recreate the methods of this study has the same data components, however, differences in findings are likely due to the data discrepancies. Since the original study being recreated employed a novel flashing solar illumination method the data located for this analysis recreation is likely using static illumination powered by batteries or glow sticks. This data analysis recreation is therefore for learning purposes only!**
 
@@ -148,7 +148,9 @@ Tweedie distributions are a family of probability distributions, often used as d
 
 #### What is a `gam()`?
 
-`gam()` is a generalized additive model. The GAM allows for more model flexibility and non-linear relationships. Our data do not follow a linear relationship, so `gam()` is a better choice than `glm()`.
+`gam()` is a generalized additive model. The GAM allows for more model flexibility and non-linear relationships. Our data do not follow a linear relationship, so `gam()` is a better choice than `glm()`. 
+
+Fixed effects in `gam()` allow for between treatment comparison, between control and treatment comparisons.  Random effects are included in this model to handle clustered/hierarchical data and manage unobserved heterogeneity within groups. This also helps to allow for overdispersion.
 
 For more information on GAM models as well as an in-depth explanation of when and how to use them this is a great recorded webinar titled the [Introduction to Generalized Additive Models with R and mgcv](https://www.google.com/search?q=gam()+r+from+the+mgcv+package&oq=gam()+r+from+the+mgcv+package&gs_lcrp=EgZjaHJvbWUyBggAEEUYOTIHCAEQIRigATIHCAIQIRigATIHCAMQIRiPAtIBCTExNDkzajBqN6gCALACAA&sourceid=chrome&ie=UTF-8#fpstate=ive&vld=cid:1afdb9fa,vid:sgw4cu8hrZM,st:8.239).
 
