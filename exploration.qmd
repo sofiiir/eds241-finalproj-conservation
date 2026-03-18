@@ -488,7 +488,7 @@ The CPUE residuals vs. fitted plot shows a stronger systematic pattern than the 
 
 ## Confirming Overdispersion
 
-The Tweedie distribution works well for zero-inflated and continuous, positively skewed data because it can handle both exact zeros and positive values within a single model. This means a separate test for zero inflation is not required. To assess model fit, the dispersion parameter in the summary output can be examined. This parameter indicates whether the model has properly captured how spread out the data is. Unlike simpler models such as the Poisson distribution for count data, which often struggle when the data are more variable than expected (Poisson assumes the mean equals the variance), the Tweedie model estimates this spread directly from the data.
+To assess model fit, the dispersion parameter in the summary output can be examined. This parameter indicates whether the model has properly captured how spread out the data is. Unlike simpler models such as the Poisson distribution for count data, which often struggle when the data are more variable than expected (Poisson assumes the mean equals the variance), the Tweedie model estimates this spread directly from the data.
 
 If the dispersion value is reasonable, then it suggests that the model has adequately captured the variability without requiring additional adjustments. Below, the mean and variance of the turtle BPUE and CPUE data are compared to assess overdispersion, and the dispersion parameters extracted from each model are used to confirm that the Tweedie distribution adequately captured the variance structure of the data.
 
@@ -527,6 +527,24 @@ dispersion_df
 The Tweedie distribution models variance as a function of the mean, allowing it to increase flexibly rather than remaining fixed. The high variance-to-mean ratios (31.82 for turtle BPUE and 8.35 for CPUE) indicate that both datasets are strongly overdispersed. The extra variability is captured by the dispersion parameters: 14.72 (turtle BPUE model) and 2.40 (CPUE model).
 
 Because the Tweedie distribution allows variance to scale with the mean, it is more suitable than models like Poisson or Gaussian (assumes constant variance, supporting its use for both the BPUE and CPUE models. Additional information on the PDF structure of the Tweedie distribution and accompanying families are linked [here](https://andrewcharlesjones.github.io/journal/tweedie.html).
+
+## Checking Zero-Inflation
+
+The Tweedie distribution works well for zero-inflated and continuous, positively skewed data because it can handle both exact zeros and positive values within a single model. We will run a separate check to see if our data are zero-inflated, indicating our model is appropriately estimating our relationship. 
+
+Below is a check from the `DHARMa` package that checks our model and data for zero-inflation. It works by comparing simulated data to the expected zeros of our model. We are expecting a `ratioObsSim` value greater than 1, indicating our data are zero-inflated which is what we expect for a GLMM Tweedie model.
+
+```{r}
+# check zero-inflation for sea turtle bycatch
+bpue_zero_check <- DHARMa::testZeroInflation(bpue_glm)
+bpue_zero_check$statistic[['ratioObsSim']]
+
+# check zero-inflation for target fish catch
+cpue_zero_check <- DHARMa::testZeroInflation(cpue_glm)
+cpue_zero_check$statistic[['ratioObsSim']]
+```
+
+As we can see, the returned zero-inflation statistic for both the sea turtle BPUE and target fish CPUE are not greater than 1, indicating we do not have zero-inflation and a Tweedie distribution may not be appropriate for these data. It is worth noting, though, that we can still use a Tweedie with non-zero inflated data.
 
 # Confidence Intervals
 
