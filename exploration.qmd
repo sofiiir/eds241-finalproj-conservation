@@ -347,7 +347,7 @@ In a simple linear regression (OLS), residuals can be observed directly because 
 ```{r}
 #| message: false
 ## Create residuals plot based on fitted values and residuals of glmm
-
+gam.check(turtle_bpue_glm)
 data.frame(
   fitted = fitted(turtle_bpue_glm), # Use fitted() to simulate glmm fitted values 
   residuals = residuals(turtle_bpue_glm)) %>% # Use residuals() to obtain glmm fitted values 
@@ -365,7 +365,7 @@ For turtle bycatch (BPUE), the residuals vs fitted values plot shows residuals s
 ```{r}
 #| message: false
 ## Create residuals plot based on fitted values and residuals of glmm
-
+gam.check(cpue_glm)
 data.frame(
   fitted = fitted(cpue_glm), # Use fitted() to simulate glmm fitted values 
   residuals = residuals(cpue_glm)) %>% # Use residuals() to obtain glmm fitted values 
