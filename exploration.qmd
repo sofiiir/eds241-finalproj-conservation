@@ -43,7 +43,7 @@ catch_data <- read_csv(here("data", "fishnet_illumination_bpue.csv"))
 The data for this study, Senko et al 2025, consists of 4 columns and 784 rows.
 
 | Column Header | gillnet_pair | animal_type | exp_unit | bpue |
-|---------------|---------------|---------------|---------------|---------------|
+|----|----|----|----|----|
 | Description | A numeric value 1-28 indicating which gillnet pair this sample is from. | Categorical variable describing which animal type this observation is for. | Categorical variable indicating treatment (illuminated) or control. | Numeric value of catch. This number is on the scale of BPUE or CPUE depending on animal type. |
 
 Our key outcome variable for this study is BPUE/CPUE, with variations of animal type as a grouping variable (turtle BPUE or target fish CPUE). Our treatment is exp_unit, indicating if that gillnet bycatch observation was from an illuminated net or not. This study compared 28 gillnet pairs of equal size/material over a time period of July-September 2019 (assessing sea turtle bycatch) and February-March 2020 (assessing target fish catch). These experiments were conducted in Baja California Sur (BCS), Mexico, where bottom-set gillnet results in high bycatch rates and subsequent mortality of sea turtles.
@@ -491,7 +491,7 @@ Because the Tweedie distribution allows variance to scale with the mean, it is m
 
 ## Confirming Zero-Inflation
 
-The Tweedie distribution works well for zero-inflated and continuous, positively skewed data because it can handle both exact zeros and positive values within a single model. We will run a separate check to see if our data are zero-inflated, indicating our model is appropriately estimating our relationship. 
+The Tweedie distribution works well for zero-inflated and continuous, positively skewed data because it can handle both exact zeros and positive values within a single model. We will run a separate check to see if our data are zero-inflated, indicating our model is appropriately estimating our relationship.
 
 Below is a check from the `DHARMa` package that checks our model and data for zero-inflation. It works by comparing simulated data to the expected zeros of our model. We are expecting a `ratioObsSim` value greater than 1, indicating our data are zero-inflated which is what we expect for a GLMM Tweedie model.
 
@@ -715,8 +715,7 @@ The authors found a 63% reduction in sea turtle bycatch with illuminated nets, h
 **Take all results with the caveat that our data is not accurate to this study. The illumination method is likely different than the flashing solar method used in this novel approach. This analysis could be rerun on the correct data once the data is released.**
 
 # References
-- Senko, J., 2021, June 30. OSF. https://osf.io/fmxby/files/u2y8e 
+
+-   Senko, J., 2021, June 30. OSF. https://osf.io/fmxby/files/u2y8e
 
 -   Senko, J. F., J. Wang, K. M. Burgher, et al. 2025. “Harnessing Solar Energy to Reduce Sea Turtle Bycatch.” Conservation Letters 18, no. 5:e13151.
-
-
