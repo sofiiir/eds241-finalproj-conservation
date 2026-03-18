@@ -346,31 +346,76 @@ Conversely, we can see illuminated nets had a larger target fish catch than non-
 
 The authors mention residual checks as an assumption check, so we will replicate below along with other assumption checks.
 
+## Normality of Residuals
+
+A histogram of residuals is utilized to assess whether the residuals are approximately normally distributed and centered around zero. This visualization is critical to check whether the model adequately absorbs the non-normal structure of the BPUE and CPUE data and that no systematic patterns remain unexplained.
+
+For GLMMs, raw residuals are not expected to follow a normal distribution, particularly when using non-Gaussian families such as Tweedie. Ideally, [model diagnostics are instead performed using simulated quantile residuals](https://stats.stackexchange.com/questions/295340/what-to-do-with-glm-gamma-when-residuals-are-not-normally-distributed) from the [DHARma](https://cran.r-project.org/web/packages/DHARMa/vignettes/DHARMa.html) package, as quantile residuals are specifically designed to follow a normal distribution. In this analysis, however, DHARma residuals could not be computed directly due to package constraints. As a result, this cavaet should be kept in mind when considering the normality of residuals assumption. Instead, a histogram
+
 ```{r}
 # check assumptions on sea turtle GLMM
 gam.check(turtle_bpue_glm)
+
+# Extract residuals from model
+bpue_resid <- residuals(turtle_bpue_glm)
+
+# Plot
+data.frame(residuals = bpue_resid) %>%
+  ggplot(aes(x = residuals)) +
+  geom_histogram(bins = 30, fill = "#39f72e", color = "white") +
+  geom_vline(xintercept = 0, color = "red", linetype = "dashed") +
+  theme_minimal() +
+  labs(title = "Histogram of Residuals for Turtle BPUE GLMM",
+       x = "Residuals",
+       y = "Count") +
+  theme(panel.background = element_rect(fill = "#2d2f33"),
+        plot.background = element_rect(fill = "#2d2f33"),
+        panel.grid = element_blank(),
+        axis.text = element_text(color = "white"),
+        axis.title = element_text(color = "white"),
+        title = element_text(color = "white"))
 ```
 
 ```{r}
 # check assumptions for target fish GLMM
 gam.check(cpue_glm)
+
+# Extract residuals from model
+cpue_resid <- residuals(cpue_glm)
+
+data.frame(residuals = cpue_resid) %>%
+  ggplot(aes(x = residuals)) +
+  geom_histogram(bins = 30, fill = "#39f72e", color = "white") +
+  geom_vline(xintercept = 0, color = "red", linetype = "dashed") +
+  theme_minimal() +
+  labs(title = "Histogram of Residuals for CPUE GLMM",
+       x = "Residuals",
+       y = "Count") +
+  theme(panel.background = element_rect(fill = "#2d2f33"),
+        plot.background = element_rect(fill = "#2d2f33"),
+        panel.grid = element_blank(),
+        axis.text = element_text(color = "white"),
+        axis.title = element_text(color = "white"),
+        title = element_text(color = "white"))
 ```
+
+The histogram of residuals for the CPUE GLMM illustrate a left-skewed distribution, indicating a violation of the normality of residuals assumption. This pattern is consistent with the systematic pattern observed in the CPUE residuals vs fitted plot, suggesting that the Tweedie GLMM did not fully capture the zero-inflated structure of the CPUE data.
 
 ## Distribution Determination Using AIC
 
-AIC (Akaike Information Criterion) was used to compare model fit across distributions while accounting for model complexity, with lower AIC values indicating a better balance between goodness of fit and parsimony. A Gamma distribution was chosen as the comparison because like the Tweedie distribution, it handles right-skewed positive data within the same GLM framework. However, the Gamma is undefined at zero, so a slight adjustment of .001 was added before fitting.
+AIC (Akaike Information Criterion) was used to compare model fit across distributions while accounting for model complexity, with lower AIC values indicating a better balance between goodness of fit and parsimony. A Gamma distribution was chosen as the comparison because like the Tweedie distribution, it handles right-skewed positive data within the same GLM framework. However, the Gamma is undefined at zero, so a slight adjustment of .0001 was added before fitting.
 
 ```{r}
 ## AIC comparison 
 # Looking for lowest score to determine best distribution
-bpue_gamma <- gam(bpue + .001 ~ # 0.001 because data need to be positive, continuous
+bpue_gamma <- gam(bpue + .0001 ~ # 0.001 because data need to be positive, continuous
                     treatment + s(gillnet_pair, bs = 're'),
                   family = Gamma(link = "log"),
                   data = bpue)
 
 ## AIC comparison 
 # Looking for lowest score to determine best distribution
-cpue_gamma <- gam(cpue + .001 ~ # 0.001 because data need to be positive, continuous
+cpue_gamma <- gam(cpue + .0001 ~ # 0.0001 because data need to be positive, continuous
                     treatment + s(gillnet_pair, bs = 're'), 
                      family = Gamma(link = "log"),
                      data = cpue)
@@ -400,16 +445,15 @@ bpue_aic
 cpue_aic
 ```
 
-The Tweedie produced the lowest AIC for both the BPUE and CPUE models, confirming it as the better-fitting distribution. The Tweedie distribution had the lowest AIC for both models compared to a Gamma distribution, indicating it provided the best fit to the data.
+The Tweedie produced the lowest AIC for the BPUE model, confirming it as the better-fitting distribution. However, the Gamma distribution resulted in the lower AIC score compared to a Tweedie distribution for the CPUE model, suggesting that Tweedie does not provide a best fit to the data for this model.
 
 ## Residual Plots
 
-In a simple linear regression (OLS), residuals can be observed directly because they are assumed to be normally distributed. In a GLMM, however, residuals are not expected to be normally distributed given that GLMMs work well for non-normally distributed data, as is common with ecological data. Here, residual plots were created manually to assess model fit and verify that the Tweedie distribution with a log link is appropriate is for the data. The residual plot checks for systematic patterns that would indicate a poor fit.
+In a simple linear regression (OLS), residuals can be observed directly because they are assumed to be normally distributed. In a GLMM, however, residuals are not expected to be normally distributed given that GLMMs work well for non-normally distributed data, as is common with ecological data. Here, residual plots were created manually to assess model fit and verify that the Tweedie distribution with a log link is appropriate for the data.The residuals vs fitted plot checks for systematic patterns that would indicate a poor fit, specifically non-linearity in the relationship between the predictor and log-transformed mean, and heteroscedasticity (spread of residuals changes across the range of fitted values).
 
 ```{r}
 #| message: false
 ## Create residuals plot based on fitted values and residuals of glmm
-
 data.frame(
   fitted = fitted(turtle_bpue_glm), # Use fitted() to simulate glmm fitted values 
   residuals = residuals(turtle_bpue_glm)) %>% # Use residuals() to obtain glmm fitted values 
@@ -677,13 +721,13 @@ The confidence intervals for the mean CPUE are approximately the same between bo
 
 # Conclusions
 
-Was this causal identification credible? We will argue that its not! 
+Was this causal identification credible? We will argue that its not!
 
 Both experiments (sea turtle bycatch and target fish) were done during different seasons, nets deployed at different locations and depths, different sampling frequency overnight, and run for different lengths of time the nets were in the water. This makes between-sample comparisons inaccurate. We cannot compare sea turtle bycatch in illuminated nets to target fish catch in illuminated nets. Additionally, target fish had a much smaller sample size compared to sea turtle bycatch, making comparisons difficult. Nets were placed at many sites in one location and rotated between depths, but it is unclear how far apart each site was from another, opening up the possibility for spillover between sites.
 
 Was a GLMM Tweedie the right choice? Yes and no! For the sea turtle experiment, data followed a tweedie distribution (positively skewed, many zeros, non-negative, and non-independent), residuals do not follow a normal distribution but the relationship between response residuals and fitted value residuals looks appropriate for a GLMM. For the target fish experiment, however, data followed a tweedie distribution, and residuals follow a normal distribution, BUT relationship between response residuals and fitted value residuals indicated a GLMM Tweedie was likely not the best statistical analysis choice.
 
-Due to the difference in sample size (target fish N = 21, sea turtle bycatch N = 67), results cannot be generalized and interspecific comparisons would be difficult to make. Experiments were done in one location, and we do not know how results would differ in different locations. Measurements were fairly consistent between gillnet pairs: gillnets were manufactured identically and with similar material to what is typically used in the area, and were deployed during normally occuring fishing hours for the same amount of time. However, sampling effort was different, with sea turtle bycatch being measured every hour but target fish catch were not measured every hour. 
+Due to the difference in sample size (target fish N = 21, sea turtle bycatch N = 67), results cannot be generalized and interspecific comparisons would be difficult to make. Experiments were done in one location, and we do not know how results would differ in different locations. Measurements were fairly consistent between gillnet pairs: gillnets were manufactured identically and with similar material to what is typically used in the area, and were deployed during normally occuring fishing hours for the same amount of time. However, sampling effort was different, with sea turtle bycatch being measured every hour but target fish catch were not measured every hour.
 
 The authors found a 63% reduction in sea turtle bycatch with illuminated nets, however we found only a 34% reduction in sea turtle bycatch with illuminated nets. This could be due to differences in data. Despite using different data, we still see a reduction in bycatch indicating that illuminated nets could be a good conservation solution with low effort required by fishermen.
 
