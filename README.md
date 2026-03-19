@@ -13,6 +13,12 @@ This repository replicates the study Harnessing Solar Energy to Reduce Sea Turtl
 
 ## References 
 
-- Senko, J., 2021, June 30. OSF. https://osf.io/fmxby/files/u2y8e 
+-  Jones, A. 2020, November 21. Tweedie distributions. Andy Jones. https://andrewcharlesjones.github.io/journal/tweedie.html 
 
-- Senko, J. F., J. Wang, K. M. Burgher, et al. 2025. “Harnessing Solar Energy to Reduce Sea Turtle Bycatch.” Conservation Letters 18, no. 5:e13151.
+-  Senko, J., 2021, June 30. OSF. https://osf.io/fmxby/files/u2y8e
+
+-  Senko, J. F., J. Wang, K. M. Burgher, et al. 2025. “Harnessing Solar Energy to Reduce Sea Turtle Bycatch.” Conservation Letters 18, no. 5:e13151.
+
+-  Simpson, G. (2020, July 20). Introduction to Generalized Additive Models with R and mgcv. YouTube. https://www.youtube.com/watch?v=sgw4cu8hrZM 
+
+-  Wood, S. N. (n.d.). GAM Tweedie families. R-manual. https://stat.ethz.ch/R-manual/R-devel/library/mgcv/html/Tweedie.html 
